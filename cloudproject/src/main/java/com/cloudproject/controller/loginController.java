@@ -2,8 +2,11 @@ package com.cloudproject.controller;
 
 import com.cloudproject.dao.DAO;
 import org.springframework.context.annotation.Bean;
+import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.UnsupportedEncodingException;
@@ -22,21 +25,16 @@ public class loginController {
     public Map<String, String> login(HttpServletRequest request) throws UnsupportedEncodingException {
         String message;
         String authType=request.getHeader("Authorization");
-        System.out.println(authType);
-        StringTokenizer tokenizer = new StringTokenizer(authType," ");
-        tokenizer.nextToken();
-        String cred = tokenizer.nextToken();
-
-        byte[] asBytes = Base64.getDecoder().decode(cred);
-        cred = new String(asBytes, "utf-8");
         Map<String, String> json = new HashMap<>();
+        System.out.println(authType);
+
         if(authType!=null && authType.contains("Basic")) {
             message= new Date().toString() + ". You are logged in!";
         }
         else{
-            message="User not logged in!!";
+            message="You are not logged in!!";
         }
-        json.put("date",message);
+        json.put("message",message);
 
         return json;
 
@@ -47,7 +45,9 @@ public class loginController {
 
         String message=null;
 
-        String authType=request.getHeader("Authorization");
+        //////IF WE HAVE TO CHECK THE AUTHENTICATION TYPE AND GET USERNAME:PASSWORD FROM HEADER//////////
+
+        /*String authType=request.getHeader("Authorization");
         StringTokenizer tokenizer = new StringTokenizer(authType," ");
         tokenizer.nextToken();
         String cred = tokenizer.nextToken();
@@ -56,7 +56,14 @@ public class loginController {
         tokenizer = new StringTokenizer(cred,":");
         String userName = tokenizer.nextToken();
         String password = tokenizer.nextToken();
-        password = bCryptPasswordEncoder().encode(password);
+        */
+
+        /////////IF WE HAVE TO GET THE USERNAME AND PASSWORD FROM REQUEST BODY/////////////
+        String userName = request.getParameter("username");
+        String password = request.getParameter("password");
+
+
+        String passEncrypted = bCryptPasswordEncoder().encode(password);
             Map<String, String> json = new HashMap();
             DAO dao = new DAO();
             boolean flag = dao.checkUser(userName);
@@ -65,29 +72,30 @@ public class loginController {
             message = "Please enter username in proper Email Format!";
         }else {
 
-            if (authType != null && authType.contains("Basic")) {
-                if (flag) {
-                    message = "User already exists";
-                } else {
-                    if (DAO.createUser(userName, password) == 1) {
-                        message = "User registered successfully";
-                    } else {
-                        message = "User registration Failed";
-                    }
-                }
+            //if (authType != null && authType.contains("Basic")) {
+            if (flag) {
+                message = "User already exists";
             } else {
-                message = "User not logged in!!";
+                if (DAO.createUser(userName, passEncrypted) == 1) {
+                    message = "User registered successfully";
+                } else {
+                    message = "User registration Failed";
+                }
             }
         }
+//            } else {
+//                message = "User not logged in!!";
+//            }
+//        }
         json.put("user", message);
 
         return json;
     }
 
-//    public static String hashPassword(String password_plaintext) {
-//        int workload = 12;
-//        String salt = BCrypt.gensalt(workload);
-//        String hashed_password = BCrypt.hashpw(password_plaintext, salt);
-//        return(hashed_password);
-//    }
+    public static String hashPassword(String password_plaintext) {
+        int workload = 12;
+        String salt = BCrypt.gensalt(workload);
+        String hashed_password = BCrypt.hashpw(password_plaintext, salt);
+        return(hashed_password);
+    }
 }
