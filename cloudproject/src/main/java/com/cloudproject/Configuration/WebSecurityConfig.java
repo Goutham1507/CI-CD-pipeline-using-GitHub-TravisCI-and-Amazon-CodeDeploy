@@ -12,8 +12,6 @@ import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
-import javax.sql.DataSource;
-
 @Configuration
 @EnableAutoConfiguration
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
@@ -29,28 +27,16 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         return new BCryptPasswordEncoder();
     }
 
-//    @Bean(name = "dataSource")
-//    public DriverManagerDataSource dataSource() {
-//        Properties props = new Properties();
-//        DriverManagerDataSource driverManagerDataSource = new DriverManagerDataSource();
-//        driverManagerDataSource.setDriverClassName("org.postgresql.Driver");
-//        driverManagerDataSource.setUrl(props.getProperty("spring.datasource.url"));
-//        driverManagerDataSource.setUsername(props.getProperty("spring.datasource.username"));
-//        driverManagerDataSource.setPassword(props.getProperty("spring.datasource.password"));
-//        return driverManagerDataSource;
-//    }
-
-
     @Autowired
-    public void configureGlobalSecurity(AuthenticationManagerBuilder auth) throws Exception {
+    public void configureGlobalSecurity(AuthenticationManagerBuilder auth) {
         System.out.println("ABC");
-        auth.authenticationProvider(customAuthenticationProvider);  //.dataSource(dataSource).usersByUsernameQuery("select username,password from logintb where username=?");
-
+        auth.authenticationProvider(customAuthenticationProvider);
     }
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http.csrf().disable();
+
         http.authorizeRequests().anyRequest().authenticated()
                 .and().httpBasic()
                 .and().sessionManagement().disable();

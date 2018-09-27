@@ -7,6 +7,7 @@ import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayDeque;
@@ -21,8 +22,11 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
     @Autowired
     private BCryptPasswordEncoderBean bCry;
 
+
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
+
+        
 
         String name = authentication.getName();
         String password = authentication.getCredentials().toString();
@@ -30,6 +34,10 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
         if(user == null){
             return null;
         }
+
+        System.out.println(bCry.bCryptPasswordEncoder().encode(password));
+
+        System.out.println(user.getPassword());
         boolean match = bCry.bCryptPasswordEncoder().matches(password,user.getPassword());
         if(match){
             return new UsernamePasswordAuthenticationToken(name,password,new ArrayDeque<>());
@@ -42,5 +50,12 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
     public boolean supports(Class<?> authentication) {
 
         return authentication.equals(UsernamePasswordAuthenticationToken.class);
+    }
+
+    public static String hashPassword(String password_plaintext) {
+        int workload = 12;
+        String salt = BCrypt.gensalt(workload);
+        String hashed_password = BCrypt.hashpw(password_plaintext, salt);
+        return(hashed_password);
     }
 }

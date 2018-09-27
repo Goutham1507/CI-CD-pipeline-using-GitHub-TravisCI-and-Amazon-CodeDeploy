@@ -52,11 +52,11 @@ public class DAO {
 
     public User checkLogin(String username){
         try{
-        System.out.println("in login check");
+//        System.out.println("in login check");
         Connection con=getConn();
         String query="SELECT * FROM logintb l where l.username='"+username+"'";
         PreparedStatement pst = con.prepareStatement(query);
-        System.out.println(query);
+//        System.out.println(query);
         ResultSet rs = pst.executeQuery();
         if(rs.next() == false){
             pst.close();
@@ -77,11 +77,11 @@ public class DAO {
 
     public static boolean checkUser(String username){
         try{
-            System.out.println("in check");
+//            System.out.println("in check");
             Connection con=getConn();
         String query="SELECT count(*) as total FROM logintb l where l.username='"+username+"'";
         PreparedStatement pst = con.prepareStatement(query);
-        System.out.println(query);
+//        System.out.println(query);
         ResultSet rs = pst.executeQuery();
         rs.next();
         int count=rs.getInt("total");
@@ -110,8 +110,8 @@ public class DAO {
             pst.setString(1, username.trim());
             pst.setString(2, password.trim());
             affectedRows = pst.executeUpdate();
-            System.out.println("AR: "+affectedRows);
-            System.out.println("affected: "+affectedRows);
+//            System.out.println("AR: "+affectedRows);
+//            System.out.println("affected: "+affectedRows);
             pst.close();
             con.close();
 
