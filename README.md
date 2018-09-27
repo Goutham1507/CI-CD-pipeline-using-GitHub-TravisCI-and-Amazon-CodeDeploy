@@ -11,3 +11,4 @@ C. Build and Deploy instructions
 
 D. Instructions to run tests
 
+Cloud
