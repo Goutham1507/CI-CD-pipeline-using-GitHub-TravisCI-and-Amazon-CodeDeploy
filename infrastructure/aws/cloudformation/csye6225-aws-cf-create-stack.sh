@@ -14,6 +14,7 @@ if  aws cloudformation describe-stacks --stack-name $stack_name ; then
    aws_response=$(aws cloudformation create-stack --stack-name $stack_name --template-body file://csye6225-cf-networking.json --on-failure DELETE)
 
    echo "Waiting for stack to be created ..."
+   aws cloudformation wait stack-create-complete --stack-name $stack_name 
 
    echo "Stack Id = $aws_response created successfully!"
     
