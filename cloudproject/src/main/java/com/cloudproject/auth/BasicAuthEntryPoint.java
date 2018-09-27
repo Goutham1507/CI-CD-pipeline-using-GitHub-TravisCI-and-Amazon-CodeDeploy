@@ -10,7 +10,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.Date;
 
 @Component
 public class BasicAuthEntryPoint extends BasicAuthenticationEntryPoint {
@@ -21,7 +20,7 @@ public class BasicAuthEntryPoint extends BasicAuthenticationEntryPoint {
         response.setContentType("application/json");
         PrintWriter writer = response.getWriter();
         JsonObject jsonObject = new JsonObject();
-        jsonObject.addProperty("message", new Date()+". You are not registered!");
+        jsonObject.addProperty("message", " You are not registered!");
         writer.println(jsonObject.toString());
     }
 
