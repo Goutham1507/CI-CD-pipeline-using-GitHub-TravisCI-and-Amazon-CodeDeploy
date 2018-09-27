@@ -1,18 +1,16 @@
 package com.cloudproject;
 
-import com.cloudproject.controller.loginController;
 import com.cloudproject.dao.DAO;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 
 @RunWith(SpringRunner.class)
-@WebMvcTest(value = loginController.class, secure = false)
+@SpringBootTest
 public class CloudprojectApplicationTests {
 
 
@@ -23,13 +21,6 @@ public class CloudprojectApplicationTests {
 
     @Test
     public void contextLoads() {
-    }
-
-    @Test
-    public void registerUserTest() throws Exception {
-        String username = "hiren";
-        DAO dao = new DAO();
-        Assert.assertTrue(dao.checkUser(username));
     }
 
 }
