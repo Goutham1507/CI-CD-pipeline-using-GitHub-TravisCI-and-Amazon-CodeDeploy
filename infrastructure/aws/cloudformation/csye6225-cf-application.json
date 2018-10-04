@@ -1,0 +1,116 @@
+{
+    "AWSTemplateFormatVersion":"2010-09-09",
+    "Description":"EcC2 instance",
+    "Parameters":{
+        "fromPort1":{
+            "Type":"String",
+            "Default":"22"
+        },
+        "toPort1":{
+            "Type":"String",
+            "Default":"22"
+        },
+        "fromPort2":{
+            "Type":"String",
+            "Default":"80"
+        },
+        "toPort2":{
+            "Type":"String",
+            "Default":"80"
+        },
+        "fromPort3":{
+            "Type":"String",
+            "Default":"443"
+        },
+        "toPort3":{
+            "Type":"String",
+            "Default":"443"
+        },
+	"fromDBPort":{
+            "Type":"String",
+            "Default":"5432"
+        },
+	"toDBPort":{
+            "Type":"String",
+            "Default":"5432"
+        },
+        "MyVpc":{
+            "Type":"String",
+            "Default":"vpc-076996e94b9e27f23"
+        },
+        "mysubnetId":{
+            "Type":"String",
+            "Default":"subnet-093c1c555ff561122"
+        },
+        "cidr":{
+            "Type":"String",
+            "Default":"0.0.0.0/0"
+        }
+    },
+    "Resources":{
+        "InstanceSecurityGroup":{
+            "Type" : "AWS::EC2::SecurityGroup",
+            "Properties":{
+                "GroupDescription":"Creating Security group with ingress rules for webapp",
+ 		        "VpcId":{"Fn::ImportValue" : "VpcID"},
+		        "GroupName": "csye6225-webapp",
+                "SecurityGroupIngress":[
+                    {
+                        "IpProtocol":"tcp",
+			            "CidrIp": {"Ref":"cidr"},
+                        "FromPort":{"Ref":"fromPort1"},
+                        "ToPort":{"Ref":"toPort1"}
+                    },
+                    {
+                        "IpProtocol":"tcp",
+			            "CidrIp": {"Ref":"cidr"},
+                        "FromPort":{"Ref":"fromPort2"},
+                        "ToPort":{"Ref":"toPort2"}
+                    },
+                    {
+                        "IpProtocol":"tcp",
+			            "CidrIp": {"Ref":"cidr"},
+                        "FromPort":{"Ref":"fromPort3"},
+                        "ToPort":{"Ref":"toPort3"}
+                    }
+                ],
+		        "Tags" :[{"Key":"Name","Value":"csye6225-webapp"}]
+            }
+        },
+ 	    "DBSecurityGroup":{
+            "Type" : "AWS::EC2::SecurityGroup",
+            "Properties":{
+                "GroupDescription":"Creating Security group with ingress rules for webapp",
+		        "GroupName": "csye6225-rds",
+ 		        "VpcId":{"Fn::ImportValue" : "VpcID"},
+                "SecurityGroupIngress":[
+                    {
+                        "IpProtocol":"tcp",
+                        "FromPort":{"Ref":"fromDBPort"},
+                        "ToPort":{"Ref":"toDBPort"},
+			            "SourceSecurityGroupId":{"Ref":"InstanceSecurityGroup"}
+                    }
+                ],
+		        "Tags" :[{"Key":"Name","Value":"csye6225-rds"}]
+            }
+        },
+        "MyEC2Instance":{
+            "Type":"AWS::EC2::Instance",
+            "Properties":{
+                "ImageId":"ami-9887c6e7",
+                "InstanceType":"t2.micro",
+                "SubnetId":{"Fn::ImportValue" :"SubnetID"},
+                "BlockDeviceMappings":[{
+                    "DeviceName":"/dev/sdm",
+                    "Ebs":{
+                        "VolumeType":"gp2",
+                        "DeleteOnTermination":"true",
+                        "VolumeSize":"20"
+                    }
+                }],
+                "SecurityGroupIds":  [{"Ref":"InstanceSecurityGroup"}] 
+            },
+            "DependsOn":"InstanceSecurityGroup"
+        }
+    }
+}
