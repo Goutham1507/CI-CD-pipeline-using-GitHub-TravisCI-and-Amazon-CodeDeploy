@@ -44,7 +44,7 @@
                     "CidrBlock" :{"Ref":"vpcCidr"},
                     "EnableDnsSupport" : "false",
                     "EnableDnsHostnames" : "false",
-                    "InstanceTenancy" : "dedicated",
+                    "InstanceTenancy" : "default",
                     "Tags" : [{"Key" : "Name", "Value":"Assignment VPC"}]
                     }
 		
@@ -241,6 +241,18 @@
                     "SubnetId":{"Ref":"PrivateSubnet3"}
                 },
                 "DependsOn":"PrivateRouteTable"
+            }
+        },
+        "Outputs":{
+            "VPC":{
+                "Description":"The VPC ID to use for EC2 instance",
+                "Value":{"Ref":"MyVpc"},
+                "Export":{ "Name" : "VpcID"}
+            },
+            "PublicSubnet":{
+                "Description":"The subnet ID to use for public web servers",
+                "Value":{"Ref":"PublicSubnet1"},
+                "Export":{ "Name" : "SubnetID" }
             }
         }
 }
