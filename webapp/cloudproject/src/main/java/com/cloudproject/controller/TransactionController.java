@@ -28,7 +28,7 @@ public class TransactionController {
     public ArrayList<Transaction> getTransactions(HttpServletResponse response, Authentication authentication){
         String username = authentication.getName();
         //ArrayList<Transaction> transactions = transactionDAO.getTransactions(username);
-        ArrayList<Transaction> transactions = (ArrayList<Transaction>) transactionDAO.findAll();
+        ArrayList<Transaction> transactions = (ArrayList<Transaction>) transactionDAO.findByUsername(username);
         if(transactions == null){
             System.out.println("No Transactions found!!");
         }
@@ -49,6 +49,11 @@ public class TransactionController {
             return new Message("Please enter all the details for Description, Merchant, Amount, Date and Category.");
         }
 
+
+        if(description.equals("") || merchant.equals("") || amount.equals("") || date.equals("") || category.equals("")){
+            return new Message("Please enter all the details for Description, Merchant, Amount, Date and Category.");
+        }
+        
         if (!(date.matches("^(0[1-9]|1[012])/(0[1-9]|[12][0-9]|3[01])/((19|2[0-9])[0-9]{2})$"))){
             return new Message("Please enter date in valid format MM/DD/YYYY");
         }
@@ -62,7 +67,7 @@ public class TransactionController {
         transaction.setDate(date);
         transaction.setCategory(category);
         transaction.setAmount(amount);
-        transaction.setUsername(username);
+        transaction.setUsername(username.trim());
         transaction.setDescription(description);
         transactionDAO.save(transaction);
 
@@ -74,7 +79,13 @@ public class TransactionController {
     public Object putTransactions(HttpServletRequest request, HttpServletResponse response, Authentication auth) {
         StringTokenizer tokenizer = new StringTokenizer(request.getRequestURI(),"/");
         tokenizer.nextToken();
-        UUID id = UUID.fromString(tokenizer.nextToken());
+        UUID id = null;
+        try {
+            id = UUID.fromString(tokenizer.nextToken());
+        }catch (Exception e){
+            return new Message("Please enter a valid ID of the Transaction!");
+        }
+
         Transaction transaction = null;
 
         String description = request.getParameter("description");
@@ -83,7 +94,12 @@ public class TransactionController {
         String date = request.getParameter("date");
         String category = request.getParameter("category");
 
+
         if(description == null || merchant == null || amount == null || date == null || category == null){
+            return new Message("Please enter all the details for Description, Merchant, Amount, Date and Category.");
+        }
+
+        if(description.equals("") || merchant.equals("") || amount.equals("") || date.equals("") || category.equals("")){
             return new Message("Please enter all the details for Description, Merchant, Amount, Date and Category.");
         }
 
@@ -101,10 +117,10 @@ public class TransactionController {
         if(!(amount.matches("^(\\d*\\.?\\d{0,2})$"))){
             return new Message("Please enter amount in valid format!");
         }
-
+        String username = auth.getName().trim();
         if((transaction.getUsername().trim()).equals(auth.getName().trim())) {
             transaction.setDescription(request.getParameter("description"));
-            transaction.setUsername(auth.getName());
+            transaction.setUsername(username);
             transaction.setAmount(amount);
             transaction.setCategory(request.getParameter("category"));
             transaction.setDate(date);
@@ -121,8 +137,15 @@ public class TransactionController {
     public Message deleteTransaction(HttpServletRequest request, HttpServletResponse response, Authentication auth) {
         StringTokenizer tokenizer = new StringTokenizer(request.getRequestURI(),"/");
         tokenizer.nextToken();
-        UUID id = UUID.fromString(tokenizer.nextToken());
+
+        UUID id = null;
+        try{
+            id = UUID.fromString(tokenizer.nextToken());
+        }catch (Exception e){
+            return new Message("Please enter a valid ID of the Transaction!");
+        }
         Transaction transaction = (transactionDAO.findById(id)).get();
+
         if((transaction.getUsername().trim()).equals(auth.getName().trim())) {
             try {
                 transactionDAO.deleteById(id);
