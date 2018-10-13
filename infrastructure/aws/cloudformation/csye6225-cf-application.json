@@ -1,6 +1,6 @@
 {
     "AWSTemplateFormatVersion":"2010-09-09",
-    "Description":"EcC2 instance",
+    "Description":"AWS cloudformation EC2 instance",
     "Parameters":{
         "fromPort1":{
             "Type":"String",
@@ -26,11 +26,11 @@
             "Type":"String",
             "Default":"443"
         },
-	"fromDBPort":{
+	    "fromDBPort":{
             "Type":"String",
             "Default":"5432"
         },
-	"toDBPort":{
+	    "toDBPort":{
             "Type":"String",
             "Default":"5432"
         },
@@ -45,6 +45,30 @@
         "cidr":{
             "Type":"String",
             "Default":"0.0.0.0/0"
+        },
+        "domainName":{
+            "Type":"String",
+            "Default":"csye6225-fall2018-kamaniv.me"
+        },
+        "tableName":{
+            "Type":"String",
+            "Default":"csye6225"
+        },
+        "dbName":{
+            "Type":"String",
+            "Default":"csye6225"
+        },
+        "dbInstanceIdentifier":{
+            "Type":"String",
+            "Default":"csye6225-spring2018"
+        },
+        "dbUsername":{
+            "Type":"String",
+            "Default":"csye6225master"
+        },
+        "dbPassword":{
+            "Type":"String",
+            "Default":"csye6225password"
         }
     },
     "Resources":{
@@ -94,12 +118,28 @@
 		        "Tags" :[{"Key":"Name","Value":"csye6225-rds"}]
             }
         },
+        "PublicDBSubnetGroup":{
+            "Type":"AWS::RDS::DBSubnetGroup",
+            "Properties":{
+                "DBSubnetGroupDescription":"Public Subnet Group",
+                "SubnetIds":[{"Fn::ImportValue":"PublicSubnetID1"},{"Fn::ImportValue":"PublicSubnetID2"},{"Fn::ImportValue":"PublicSubnetID3"}],
+                "Tags":[{"Key":"Name","Value":"Public DB SubnetGroup"}]
+            }
+        },
+        "PrivateDBSubnetGroup":{
+            "Type":"AWS::RDS::DBSubnetGroup",
+            "Properties":{
+                "DBSubnetGroupDescription":"Private Subnet Group",
+                "SubnetIds":[{"Fn::ImportValue":"PrivateSubnetID1"},{"Fn::ImportValue":"PrivateSubnetID2"},{"Fn::ImportValue":"PrivateSubnetID3"}],
+                "Tags":[{"Key":"Name","Value":"Private DB SubnetGroup"}]
+            }
+        },
         "MyEC2Instance":{
             "Type":"AWS::EC2::Instance",
             "Properties":{
                 "ImageId":"ami-9887c6e7",
                 "InstanceType":"t2.micro",
-                "SubnetId":{"Fn::ImportValue" :"SubnetID"},
+                "SubnetId":{"Fn::ImportValue":"PublicSubnetID1"},
                 "BlockDeviceMappings":[{
                     "DeviceName":"/dev/sdm",
                     "Ebs":{
@@ -111,6 +151,53 @@
                 "SecurityGroupIds":  [{"Ref":"InstanceSecurityGroup"}] 
             },
             "DependsOn":"InstanceSecurityGroup"
+        },
+        "myDynamoDBTable" : {
+            "Type" : "AWS::DynamoDB::Table",
+            "Properties" : {
+                "AttributeDefinitions" : [
+                    {
+                        "AttributeName" : "id",
+                        "AttributeType" : "S"
+                    }
+                ],
+                "KeySchema" : [
+                    {
+                        "AttributeName" : "id",
+                        "KeyType" : "HASH"
+                    }
+                ],
+                "ProvisionedThroughput" : {
+                    "ReadCapacityUnits" : "5",
+                    "WriteCapacityUnits" : "5"
+                },
+                "TableName" : {"Ref":"tableName"}
+                }
+        },   
+        "S3Bucket" : {
+            "Type" : "AWS::S3::Bucket",
+            "Properties" : {
+                "AccessControl" : "PublicRead",
+                "BucketName" : {"Ref":"domainName"}
+            }
+        },
+        "RDSInstance" : {
+            "Type" : "AWS::RDS::DBInstance",
+            "Properties" : {
+                "AllocatedStorage":"20",
+                "Engine" : "postgres",
+                "EngineVersion" : "10.5",
+                "DBName" : {"Ref":"dbName"},
+                "DBInstanceClass" : "db.t2.medium",
+                "MultiAZ":false,
+                "DBInstanceIdentifier":{"Ref":"dbInstanceIdentifier"},
+                "MasterUsername" : {"Ref":"dbUsername"},
+                "MasterUserPassword" : {"Ref":"dbPassword"},
+                "PubliclyAccessible":false,
+                "DBSubnetGroupName": {"Ref":"PrivateDBSubnetGroup"},
+                "VPCSecurityGroups":[{"Ref":"DBSecurityGroup"}],
+                "Tags" : [ { "Key" : "Name", "Value" : "My SQL Database" } ]
+            }
         }
     }
 }
