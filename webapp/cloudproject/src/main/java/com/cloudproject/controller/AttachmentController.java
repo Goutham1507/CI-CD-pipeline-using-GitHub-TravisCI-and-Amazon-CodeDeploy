@@ -109,55 +109,56 @@ public class AttachmentController {
         {
             return new Message("Url cannot be blank!");
         }
-        File file = new File(url);
-        String ext= file.getName().substring(file.getName().lastIndexOf("."));
-        String fileName=transactionId + "_" + new Date().getTime()+ext;
+
+            File file = new File(url);
+            String ext= file.getName().substring(file.getName().lastIndexOf("."));
+            String fileName=transactionId + "_" + new Date().getTime()+ext;
 
 
-        if(!(ext.equalsIgnoreCase(".png") || ext.equalsIgnoreCase(".jpeg") || ext.equalsIgnoreCase(".jpg"))){
-            return new Message("Unsupported extension! Only .jpg, .jpeg, .png file allowed");
-        }
-
-          Attachment attachment=new Attachment(url, UUID.fromString(transactionId));
-        try {
-            transaction = (transactionDAO.findById(UUID.fromString(transactionId))).get();
-        }catch(NoSuchElementException e){
-            return new Message("No such transaction exists!");
-        }
-
-          attachment.setTransaction(transaction);
-
-/////////////////////code for s3 upload////////////////////////////////////////////
-        if("dev".equalsIgnoreCase(profile))
-        {
-            getBucketProperties();
-
-            AmazonS3 s3client = getAmazonS3Client();
-
-            s3client.putObject(new PutObjectRequest(bucketName, fileName, file));
-            fileUrl = endPointUrl + "/" + bucketName + "/" + fileName;
-
-        }
-        /////////////////////code for s3////////////////////////////////////////////
-
-        else{
-            fileUrl="src/images/"+fileName;
-            try {
-                Files.copy(new File(url).toPath(),new File(fileUrl).toPath());
-            } catch (FileNotFoundException e) {
-                System.out.println("File not found");
-            } catch (IOException e) {
-                System.out.println("IO ");
+            if(!(ext.equalsIgnoreCase(".png") || ext.equalsIgnoreCase(".jpeg") || ext.equalsIgnoreCase(".jpg"))){
+                return new Message("Unsupported extension! Only .jpg, .jpeg, .png file allowed");
             }
 
-        }
-        attachment.setUrl(fileUrl);
+            Attachment attachment=new Attachment(url, UUID.fromString(transactionId));
+            try {
+                transaction = (transactionDAO.findById(UUID.fromString(transactionId))).get();
+            }catch(NoSuchElementException e){
+                return new Message("No such transaction exists!");
+            }
 
-        attachmentDAO.save(attachment);
-        response.setStatus(HttpServletResponse.SC_OK);
+            attachment.setTransaction(transaction);
 
-        return attachment;
 
+/////////////////////code for s3 upload////////////////////////////////////////////
+            if("dev".equalsIgnoreCase(profile))
+            {
+                getBucketProperties();
+
+                AmazonS3 s3client = getAmazonS3Client();
+
+                s3client.putObject(new PutObjectRequest(bucketName, fileName, file));
+                fileUrl = endPointUrl + "/" + bucketName + "/" + fileName;
+
+            }
+            /////////////////////code for s3////////////////////////////////////////////
+
+            else{
+                fileUrl="src/images/"+fileName;
+                try {
+                    Files.copy(new File(url).toPath(),new File(fileUrl).toPath());
+                } catch (FileNotFoundException e) {
+                    return new Message("File not found");
+                } catch (IOException e) {
+                    return new Message("File not found");
+                }
+
+            }
+            attachment.setUrl(fileUrl);
+
+            attachmentDAO.save(attachment);
+            response.setStatus(HttpServletResponse.SC_OK);
+
+            return attachment;
     }
 
 
@@ -170,43 +171,44 @@ public class AttachmentController {
         String fileName;
         Attachment attachment;
         String url="";
-        try{
 
-            getAttachID = UUID.fromString(attachID);
-            attachment = (attachmentDAO.findById(getAttachID)).get();
-            url=attachment.getUrl().trim();
-             fileName= url.substring( url.lastIndexOf('/')+1, url.length() ).trim();
-        }catch (Exception e){
-            return new Message("Please enter a valid ID of the Attachment!");
-        }
+            try{
 
-        if((attachment.getTransaction().getUsername().trim()).equals(auth.getName().trim())) {
-            try {
-                if("dev".equalsIgnoreCase(profile)){
-                    getBucketProperties();
-
-
-                    AmazonS3 s3client = getAmazonS3Client();
-
-                    System.out.println(fileName);
-                    s3client.deleteObject(new DeleteObjectRequest(bucketName,fileName));
-                }else{
-                    File file = new File(url);
-                    System.out.println(url);
-                    if(!file.delete()){
-                        System.out.println("File not found!");
-                    }
-                }
-                attachmentDAO.deleteById(getAttachID);
-            }catch(EmptyResultDataAccessException e){
-                return new Message("Transaction does not exist!");
+                getAttachID = UUID.fromString(attachID);
+                attachment = (attachmentDAO.findById(getAttachID)).get();
+                url=attachment.getUrl().trim();
+                fileName= url.substring( url.lastIndexOf('/')+1, url.length() ).trim();
+            }catch (Exception e){
+                return new Message("Please enter a valid ID of the Attachment!");
             }
-            response.setStatus(HttpServletResponse.SC_NO_CONTENT);
-            return new Message("Transaction deleted Successfully!");
-        }else{
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            return new Message("You are not Authorized for this Transaction!");
-        }
+
+            if((attachment.getTransaction().getUsername().trim()).equals(auth.getName().trim())) {
+                try {
+                    if("dev".equalsIgnoreCase(profile)){
+                        getBucketProperties();
+
+
+                        AmazonS3 s3client = getAmazonS3Client();
+
+                        System.out.println(fileName);
+                        s3client.deleteObject(new DeleteObjectRequest(bucketName,fileName));
+                    }else{
+                        File file = new File(url);
+                        System.out.println(url);
+                        if(!file.delete()){
+                            return new Message("File not found");
+                        }
+                    }
+                    attachmentDAO.deleteById(getAttachID);
+                }catch(EmptyResultDataAccessException e){
+                    return new Message("Transaction does not exist!");
+                }
+                response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+                return new Message("Transaction deleted Successfully!");
+            }else{
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                return new Message("You are not Authorized for this Transaction!");
+            }
     }
 
 
@@ -218,54 +220,63 @@ public class AttachmentController {
         UUID getAttachID=null;
         String fileName;
         Attachment attachment;
-        String url="";
+        String url="",fileUrl="";
 
         String newUrl = request.getParameter("url");
 
-        if(url.equals(""))
+        if(newUrl.equals(""))
         {
             return new Message("Url cannot be blank!");
         }
 
-        File newFile = new File(newUrl);
-        String ext= newFile.getName().substring(newFile.getName().lastIndexOf("."));
+            File newFile = new File(newUrl);
+            String ext= newFile.getName().substring(newFile.getName().lastIndexOf("."));
 
-        if(!(ext.equalsIgnoreCase(".png") || ext.equalsIgnoreCase(".jpeg") || ext.equalsIgnoreCase(".jpg"))){
-            return new Message("Unsupported extension! Only .jpg, .jpeg, .png file allowed");
-        }
-
-        try{
-            getAttachID = UUID.fromString(attachID);
-            attachment = (attachmentDAO.findById(getAttachID)).get();
-            url=attachment.getUrl().trim();
-            fileName= url.substring( url.lastIndexOf('/')+1, url.length() ).trim();
-        }catch (Exception e){
-            return new Message("Please enter a valid ID of the Attachment!");
-        }
-
-        if((attachment.getTransaction().getUsername().trim()).equals(auth.getName().trim())) {
-
-            if("dev".equalsIgnoreCase(profile)){
-                getBucketProperties();
-                AmazonS3 s3client = getAmazonS3Client();
-                s3client.putObject(new PutObjectRequest(bucketName, fileName, newFile));
-            }else{
-                File file = new File(url);
-                System.out.println(url);
-                if(!file.delete()){
-                    System.out.println("File not found!");
-                }
-                try {
-                    Files.copy(new File(newUrl).toPath(),new File(url).toPath());
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+            if(!(ext.equalsIgnoreCase(".png") || ext.equalsIgnoreCase(".jpeg") || ext.equalsIgnoreCase(".jpg"))){
+                return new Message("Unsupported extension! Only .jpg, .jpeg, .png file allowed");
             }
 
-        }else{
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            return new Message("You are not Authorized for this Transaction!");
-        }
-        return new Message("Transaction updated");
+            try{
+                getAttachID = UUID.fromString(attachID);
+                attachment = (attachmentDAO.findById(getAttachID)).get();
+                url=attachment.getUrl().trim();
+                fileName= url.substring( url.lastIndexOf('/')+1, url.length() ).trim();
+            }catch (Exception e){
+                return new Message("Please enter a valid ID of the Attachment!");
+            }
+
+            if((attachment.getTransaction().getUsername().trim()).equals(auth.getName().trim())) {
+
+                if("dev".equalsIgnoreCase(profile)){
+
+                    if(!newFile.exists())
+                        return new Message("File does not exists");
+
+                    getBucketProperties();
+                    AmazonS3 s3client = getAmazonS3Client();
+                    s3client.putObject(new PutObjectRequest(bucketName, fileName, newFile));
+                }else{
+                    try {
+                        File newFile2 = new File(newUrl);
+                        File file = new File(url);
+
+                        if(!newFile2.exists())
+                            return new Message("File does not exists");
+
+                        if(!file.delete()){
+                            return new Message("File not found src");
+                        }
+                        Files.copy(new File(newUrl).toPath(),new File(url).toPath());
+
+                    } catch (Exception e) {
+                        return new Message("File not found");
+                    }
+                }
+
+            }else{
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                return new Message("You are not Authorized for this Transaction!");
+            }
+            return new Message("Transaction updated");
     }
 }
