@@ -2,6 +2,9 @@ package com.cloudproject.bean;
 
 import javax.persistence.*;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -30,6 +33,19 @@ public class Transaction implements Serializable {
 
     @Column(name="category")
     private String category;
+
+    @OneToMany(
+            fetch = FetchType.EAGER,
+            mappedBy = "transaction",orphanRemoval=true)
+    private List<Attachment> attachments = new ArrayList<>();
+
+    public List<Attachment> getAttachments() {
+        return attachments;
+    }
+
+    public void setAttachments(List<Attachment> attachments) {
+        this.attachments = attachments;
+    }
 
     public Transaction() {
     }
@@ -98,4 +114,6 @@ public class Transaction implements Serializable {
     public void setCategory(String category) {
         this.category = category;
     }
+
+
 }
