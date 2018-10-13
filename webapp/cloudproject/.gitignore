@@ -1,6 +1,9 @@
 /target/
 !.mvn/wrapper/maven-wrapper.jar
 
+/src/images/*
+/src/main/resources/application-dev.properties
+
 ### STS ###
 .apt_generated
 .classpath
