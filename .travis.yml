@@ -9,7 +9,7 @@ install: true
 script:
   - pwd
   - cd webapp
-  - ./gradlew war
+  - ./mvnw war
   - cd build/libs
   - ls -al
   - cd ../../..
