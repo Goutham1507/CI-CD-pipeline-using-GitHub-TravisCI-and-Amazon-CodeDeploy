@@ -9,7 +9,7 @@ install: true
 script:
   - pwd
   - cd webapp/cloudproject
-  - ./mvnw war
+  - ./mvnw clean install war
   - cd build/libs
   - ls -al
   - cd ../../..
