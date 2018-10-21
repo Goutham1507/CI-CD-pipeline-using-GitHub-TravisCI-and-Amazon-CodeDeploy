@@ -10,7 +10,7 @@ script:
   - pwd
   - cd webapp/cloudproject
   - ./mvnw clean install
-   #  - cd build/libs
+  #  - cd build/libs
   - ls -al
   - cd ../../..
   - pwd
