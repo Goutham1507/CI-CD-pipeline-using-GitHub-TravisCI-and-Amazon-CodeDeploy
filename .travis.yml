@@ -42,8 +42,8 @@ deploy:
     skip_cleanup: true
     access_key_id: $access_key_id
     secret_access_key: $secret_access_key
-    #     on:
-    #       branch: master
+    on:
+      branch: hirenAsgn5
   - provider: codedeploy
     access_key_id: $access_key_id
     bucket: $s3_bucket
@@ -54,5 +54,5 @@ deploy:
     region: us-east-1
     secret_access_key: $secret_access_key
     wait-until-deployed: true
-    #    on:
-    #   branch: master
+    on:
+      branch: hirenAsgn5
