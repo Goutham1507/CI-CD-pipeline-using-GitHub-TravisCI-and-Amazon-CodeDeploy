@@ -21,6 +21,8 @@ after_success:
   - ls -al
   - cd csye6225-fall2018
   - ls -al  
+  - cd webapp/build/libs
+  - ls -al  
   - mkdir codedeploy_artifact
   - cp infrastructure/aws/codedeploy/*.sh .
   - cp infrastructure/aws/codedeploy/*.yml .
