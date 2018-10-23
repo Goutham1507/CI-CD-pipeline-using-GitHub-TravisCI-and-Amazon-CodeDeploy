@@ -10,7 +10,7 @@ script:
   - pwd
   - cd webapp/cloudproject
   - ./mvnw clean package
-   #  - cd build/libs
+  - cd build/libs
   - ls -al
   - cd ../../..
   - pwd
@@ -19,10 +19,6 @@ script:
 after_success:
   - pwd
   - ls -al
-  - cd csye6225-fall2018
-  - ls -al  
-  - cd webapp
-  - ls -al  
   - mkdir codedeploy_artifact
   - cp infrastructure/aws/codedeploy/*.sh .
   - cp infrastructure/aws/codedeploy/*.yml .
