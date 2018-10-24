@@ -41,6 +41,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @RestController
+@PropertySource("classpath:application.properties")
 public class AttachmentController {
 
     @Autowired
