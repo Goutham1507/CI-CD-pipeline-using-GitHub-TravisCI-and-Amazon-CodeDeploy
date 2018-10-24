@@ -1,6 +1,8 @@
 package com.cloudproject.controller;
 
+import com.cloudproject.bean.User;
 import com.cloudproject.dao.DAO;
+import com.cloudproject.dao.User1DAO;
 import com.cloudproject.dao.UserDAO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -23,7 +25,7 @@ public class loginController {
     BCryptPasswordEncoder bCry;
 
     @Autowired
-    UserDAO dao;
+    User1DAO dao;
 
 
     @RequestMapping(value = "/time", method = RequestMethod.GET)
@@ -59,16 +61,17 @@ public class loginController {
         String passEncrypted = bCry.encode(password);
         Map<String, String> json = new HashMap();
 
-        boolean flag = dao.checkUser(userName);
+        User user = dao.getUserByUsername(userName);
 
         if (!Pattern.matches("^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$", userName)) {
             message = "Please enter username in proper Email Format!";
         } else {
 
-            if (flag) {
+            if (user != null) {
                 message = "User already exists";
             } else {
-                if (dao.createUser(userName, passEncrypted) == 1) {
+                user = new User(userName, passEncrypted);
+                if (dao.save(user) != null) {
                     message = "User registered successfully";
                 } else {
                     message = "User registration Failed";
