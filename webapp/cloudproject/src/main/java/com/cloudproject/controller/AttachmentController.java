@@ -14,6 +14,7 @@ import com.cloudproject.dao.AttachmentDAO;
 import com.cloudproject.dao.DAO;
 import com.cloudproject.dao.TransactionDAO;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
@@ -56,16 +57,6 @@ public class AttachmentController {
     @Autowired
     Properties properties;
 
-    @Bean
-    @Primary
-    public DataSource dataSource() {
-        return DataSourceBuilder
-                .create()
-                .username(System.getProperty("spring.datasource.username"))
-                .password(System.getProperty("spring.datasource.password"))
-                .url(System.getProperty("spring.datasource.url"))
-                .build();
-    }
 
     @Autowired
     @Bean
