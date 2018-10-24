@@ -28,6 +28,8 @@ public class loginController {
 
     @RequestMapping(value = "/time", method = RequestMethod.GET)
     public Map<String, String> login(HttpServletRequest request) throws UnsupportedEncodingException {
+
+        System.out.print("----------------------------------------"+System.getenv("SPRING_DATASOURCE_URL")+"-----------");
         String message;
         String authType=request.getHeader("Authorization");
         Map<String, String> json = new HashMap<>();
