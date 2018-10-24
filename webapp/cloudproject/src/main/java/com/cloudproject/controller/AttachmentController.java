@@ -82,7 +82,15 @@ public class AttachmentController {
             this.bucketName = properties.getProperty("amazonProperties.bucketName");
             System.out.println(bucketName);
             this.endPointUrl = properties.getProperty("amazonProperties.endpointUrl");
-        }else {
+        }
+        else if("aws".equals(profile)){
+            System.out.print("In AWS");
+            properties.setProperty("spring.datasource.url",System.getProperty("spring.datasource.url"));
+            properties.setProperty("spring.datasource.username",System.getProperty("spring.datasource.username"));
+            properties.setProperty("spring.datasource.password",System.getProperty("spring.datasource.password"));
+
+        }
+        else {
             this.bucketName = null;
             this.endPointUrl = null;
         }
