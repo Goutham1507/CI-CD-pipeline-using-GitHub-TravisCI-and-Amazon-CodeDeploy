@@ -2,7 +2,7 @@ version: 0.0
 os: linux
 
 files:             
-  - source: ./webapp/cloudproject/target/ROOT.war
+  - source: ./webapp/cloudproject/target/csye6225_webapp.war
     destination: /opt/tomcat/webapps
 
 hooks:
