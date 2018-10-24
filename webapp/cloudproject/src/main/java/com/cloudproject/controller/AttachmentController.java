@@ -14,7 +14,9 @@ import com.cloudproject.dao.AttachmentDAO;
 import com.cloudproject.dao.DAO;
 import com.cloudproject.dao.TransactionDAO;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.security.core.Authentication;
@@ -25,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.sql.DataSource;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -38,7 +41,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @RestController
-@PropertySource("classpath:application.properties")
 public class AttachmentController {
 
     @Autowired
@@ -52,6 +54,17 @@ public class AttachmentController {
 
     @Autowired
     Properties properties;
+
+    @Bean
+    @Primary
+    public DataSource dataSource() {
+        return DataSourceBuilder
+                .create()
+                .username(System.getProperty("spring.datasource.username"))
+                .password(System.getProperty("spring.datasource.password"))
+                .url(System.getProperty("spring.datasource.url"))
+                .build();
+    }
 
     @Autowired
     @Bean
