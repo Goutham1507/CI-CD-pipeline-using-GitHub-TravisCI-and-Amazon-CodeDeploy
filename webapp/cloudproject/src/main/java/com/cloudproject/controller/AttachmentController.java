@@ -105,7 +105,7 @@ public class AttachmentController {
         System.out.println("-------> BucketName:" + bucketName);
         System.out.println("-------> EndPointUrl:" + endPointUrl);
         System.out.println("-------> FileName:" + fileName);
-        System.out.println("-------> file:" + file.getName());
+        System.out.println("-------> file:" + file.getOriginalFilename());
 //        System.out.println("-------> file1:" + file1.exists());
 
 
