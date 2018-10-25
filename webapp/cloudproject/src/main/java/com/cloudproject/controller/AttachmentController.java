@@ -75,7 +75,7 @@ public class AttachmentController {
 //        if (url.equals("")) {
 //            return new Message("Url cannot be blank!");
 //        }
-        File file1 = new File("");
+        File file1 = new File("/src/images");
                 file.transferTo(file1);
         String ext = file.getName().substring(file.getName().lastIndexOf("."));
         String fileName = transactionId + "_" + new Date().getTime() + ext;
