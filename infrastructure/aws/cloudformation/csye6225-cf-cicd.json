@@ -1,0 +1,298 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Create CICD template",
+    "Parameters": {
+        "S3BucketApp": {
+            "Type": "String",
+            "Default": "xyz180305"
+        },
+        "S3BucketCodeDeployDomain": {
+            "Type": "String",
+            "Default": "code-deploy.abc180305"
+        },
+        "TagKey": {
+            "Type": "String",
+            "Default": "csye6225-EC2-Key"
+        },
+        "TagValue": {
+            "Type": "String",
+            "Default": "csye6225-EC2"
+        },
+        "TravisUser": {
+            "Type": "String",
+            "Default": "travis"
+        }
+    },
+    "Resources": {
+        "CodeDeployEC2ServiceRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "ec2.amazonaws.com"
+                                ]
+                            },
+                            "Action": [
+                                "sts:AssumeRole"
+                            ]
+                        }
+                    ]
+                },
+                "ManagedPolicyArns": [
+                    {
+                        "Fn::Join": [
+                            "",
+                            [
+                                "arn:aws:iam:",
+                                ":",
+                                {
+                                    "Ref": "AWS::AccountId"
+                                },
+                                ":",
+                                "policy",
+                                "/",
+                                "CodeDeployEC2S3"
+                            ]
+                        ]
+                    }
+                ],
+                "Path": "/",
+                "RoleName": "CodeDeployEC2ServiceRole"
+            },
+            "DependsOn": "CodeDeployEC2S3"
+        },
+        "CodeDeployServiceRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "codedeploy.amazonaws.com"
+                                ]
+                            },
+                            "Action": [
+                                "sts:AssumeRole"
+                            ]
+                        }
+                    ]
+                },
+                "ManagedPolicyArns": [
+                    "arn:aws:iam::aws:policy/service-role/AWSCodeDeployRole"
+                ],
+                "Path": "/",
+                "RoleName": "CodeDeployServiceRole"
+            }
+        },
+        "EC2ServiceRoleInstanceProfile": {
+            "Type": "AWS::IAM::InstanceProfile",
+            "Properties": {
+                "Path": "/",
+                "Roles": [
+                    {
+                        "Ref": "CodeDeployEC2ServiceRole"
+                    }
+                ],
+                "InstanceProfileName": "EC2ServiceRoleInstanceProfile"
+            },
+            "DependsOn": "CodeDeployEC2ServiceRole"
+        },
+        "TravisCodeDeploy": {
+            "Type": "AWS::IAM::ManagedPolicy",
+            "Properties": {
+                "Description": "This policy allows TravisCI to call CodeDeploy APIs to initiate application deployment on EC2 instances.",
+                "Path": "/",
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "codedeploy:RegisterApplicationRevision",
+                                "codedeploy:GetApplicationRevision"
+                            ],
+                            "Resource": {
+                                "Fn::Join": [
+                                    "",
+                                    [
+                                        "arn:aws:codedeploy:",
+                                        {
+                                            "Ref": "AWS::Region"
+                                        },
+                                        ":",
+                                        {
+                                            "Ref": "AWS::AccountId"
+                                        },
+                                        ":",
+                                        "CodeDeployApp"
+                                    ]
+                                ]
+                            }
+                        },
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "codedeploy:CreateDeployment",
+                                "codedeploy:GetDeployment"
+                            ],
+                            "Resource": [
+                                "*"
+                            ]
+                        },
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "codedeploy:GetDeploymentConfig"
+                            ],
+                            "Resource": [
+                                {"Fn::Join": ["",["arn:aws:codedeploy:",{"Ref": "AWS::Region"},":",{"Ref": "AWS::AccountId"},":deploymentconfig:CodeDeployDefault.OneAtATime"]]},
+                                {"Fn::Join": ["",["arn:aws:codedeploy:",{"Ref": "AWS::Region"},":",{"Ref": "AWS::AccountId"},":deploymentconfig:CodeDeployDefault.HalfAtATime"]]},
+                                {"Fn::Join": ["",["arn:aws:codedeploy:",{"Ref": "AWS::Region"},":",{"Ref": "AWS::AccountId"},":deploymentconfig:CodeDeployDefault.AllAtOnce"]]}
+                            ]
+                        }
+                    ]
+                },
+                "Users": [
+                    {
+                        "Ref": "TravisUser"
+                    }
+                ]
+            },
+            "DependsOn": "CodeDeployApp"
+        },
+        "CodeDeployEC2S3": {
+            "Type": "AWS::IAM::ManagedPolicy",
+            "Properties": {
+                "Description": "This policy allows EC2 instances to get data from S3 buckets. This is required for EC2 instances to download latest application revision.",
+                "Path": "/",
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "s3:Get*",
+                                "s3:List*",
+                                "s3:Put*",
+                                "s3:Delete*"
+                            ],
+                            "Resource": [
+                                {"Fn::Join":["",["arn:aws:s3:::",{"Ref":"S3BucketCodeDeploy"},"/*"]]},
+                                {"Fn::Join":["",["arn:aws:s3:::",{"Ref":"S3BucketApp"},"/*"]]}
+                            ]
+                        }
+                    ]
+                },
+                "ManagedPolicyName": "CodeDeployEC2S3"
+            }
+        },
+        "TravisUploadToS3": {
+            "Type": "AWS::IAM::ManagedPolicy",
+            "Properties": {
+                "Description": "This policy allows TravisCI to upload artifiacts from latest successful build to dedicated S3 bucket used by code deploy.",
+                "Path": "/",
+                "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "s3:PutObject"
+                            ],
+                            "Resource": {
+                                "Fn::Join": [
+                                    "",
+                                    [
+                                        "arn:aws:s3:",
+                                        "::",
+                                        "S3BucketCodeDeploy",
+                                        "/*"
+                                    ]
+                                ]
+                            }
+                        }
+                    ]
+                },
+                "Users": [
+                    {
+                        "Ref": "TravisUser"
+                    }
+                ]
+            },
+            "DependsOn": "S3BucketCodeDeploy"
+        },
+        "S3BucketCodeDeploy": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+                "BucketName": {
+                    "Ref": "S3BucketCodeDeployDomain"
+                }
+            }
+        },
+        "CodeDeployApp": {
+            "Type": "AWS::CodeDeploy::Application",
+            "Properties": {
+                "ApplicationName": "csye6225-fall2018",
+                "ComputePlatform": "Server"
+            }
+        },
+        "DeploymentGroup": {
+            "Type": "AWS::CodeDeploy::DeploymentGroup",
+            "Properties": {
+                "ApplicationName": "csye6225-fall2018",
+                "DeploymentGroupName": "csye6225-fall2018-DeploymentGroup",
+                "DeploymentConfigName": "CodeDeployDefault.AllAtOnce",
+                "DeploymentStyle": {
+                    "DeploymentOption": "WITHOUT_TRAFFIC_CONTROL",
+                    "DeploymentType": "IN_PLACE"
+                },
+                "Ec2TagFilters": [
+                    {
+                        "Key": {
+                            "Ref": "TagKey"
+                        },
+                        "Value": {
+                            "Ref": "TagValue"
+                        },
+                        "Type": "KEY_AND_VALUE"
+                    }
+                ],
+                "ServiceRoleArn": {
+                    "Fn::GetAtt": [
+                        "CodeDeployServiceRole",
+                        "Arn"
+                    ]
+                }
+            },
+            "DependsOn": "CodeDeployApp"
+        }
+    },
+    "Outputs": {
+        "S3BucketCodeDeploy": {
+            "Description": "The S3 bucket for code deploy",
+            "Value": {
+                "Ref": "S3BucketCodeDeploy"
+            },
+            "Export": {
+                "Name": "S3BucketCodeDeploy"
+            }
+        },
+        "EC2ServiceRoleInstanceProfile": {
+            "Description": "The Instance Profile for EC2 Service Role",
+            "Value": {
+                "Ref": "EC2ServiceRoleInstanceProfile"
+            },
+            "Export": {
+                "Name": "EC2ServiceRoleInstanceProfile"
+            }
+        }
+    }
+}
