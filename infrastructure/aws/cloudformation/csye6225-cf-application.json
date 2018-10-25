@@ -26,6 +26,14 @@
             "Type":"String",
             "Default":"443"
         },
+        "fromPort4":{
+            "Type":"String",
+            "Default":"8080"
+        },
+        "toPort4":{
+            "Type":"String",
+            "Default":"8080"
+        },
 	    "fromDBPort":{
             "Type":"String",
             "Default":"5432"
@@ -48,7 +56,7 @@
         },
         "domainName":{
             "Type":"String",
-            "Default":"csye6225-fall2018-kamaniv.me"
+            "Default":"xyz180305"
         },
         "tableName":{
             "Type":"String",
@@ -96,6 +104,12 @@
 			            "CidrIp": {"Ref":"cidr"},
                         "FromPort":{"Ref":"fromPort3"},
                         "ToPort":{"Ref":"toPort3"}
+                    },
+                    {
+                        "IpProtocol":"tcp",
+			            "CidrIp": {"Ref":"cidr"},
+                        "FromPort":{"Ref":"fromPort4"},
+                        "ToPort":{"Ref":"toPort4"}
                     }
                 ],
 		        "Tags" :[{"Key":"Name","Value":"csye6225-webapp"}]
@@ -140,6 +154,8 @@
                 "ImageId":"ami-9887c6e7",
                 "InstanceType":"t2.micro",
                 "SubnetId":{"Fn::ImportValue":"PublicSubnetID1"},
+                "KeyName":"csye6225",
+                "IamInstanceProfile":{"Fn::ImportValue":"EC2ServiceRoleInstanceProfile"},
                 "BlockDeviceMappings":[{
                     "DeviceName":"/dev/sdm",
                     "Ebs":{
@@ -148,7 +164,209 @@
                         "VolumeSize":"20"
                     }
                 }],
-                "SecurityGroupIds":  [{"Ref":"InstanceSecurityGroup"}] 
+                "SecurityGroupIds":  [{"Ref":"InstanceSecurityGroup"}],
+                "Tags":[{"Key":"csye6225-EC2-Key","Value":"csye6225-EC2"}],
+                "UserData": {
+                    "Fn::Base64": {
+                        "Fn::Join": [
+                            "\n",
+                            [
+                                "#!/bin/bash -xe ",
+                                "sudo yum update -y",
+                                "sudo yum install ruby ntp wget java-1.8.0-openjdk-devel postgresql-server postgres-contrib -y",
+                                "cd /home/centos",
+                                "sudo wget https://aws-codedeploy-us-east-1.s3.amazonaws.com/latest/install",
+                                "sudo chmod +x ./install",
+                                "sudo ./install auto",
+                                "sudo service codedeploy-agent status",
+                                "sudo service codedeploy-agent start",
+                                "sudo service codedeploy-agent status",
+                                "systemctl start ntpd",
+                                "systemctl enable ntpd",
+                                "sudo groupadd tomcat",
+                                "sudo useradd -M -s /bin/nologin -g tomcat -d /opt/tomcat tomcat",
+                                "cd /tmp",
+                                "wget http://apache.mirrors.pair.com/tomcat/tomcat-8/v8.5.34/bin/apache-tomcat-8.5.34.tar.gz",
+                                "sudo mkdir /opt/tomcat",
+                                "sudo tar xvf apache-tomcat-8*tar.gz -C /opt/tomcat --strip-components=1",
+                                "cd /opt/tomcat",
+                                "sudo chgrp -R tomcat /opt/tomcat",
+                                "sudo chmod -R g+r conf",
+                                "sudo chmod -R g+x conf",
+                                "sudo chown -R tomcat webapps/ work/ temp/ logs/",
+                                "cd /usr/lib/systemd/system",
+                                "touch tomcat.service",
+                                "echo '[Unit]' > tomcat.service",
+                                "echo 'Description=Apache Tomcat Web Application Container' >> tomcat.service",
+                                "echo 'After=syslog.target network.target' >> tomcat.service",
+                                "echo '[Service]' >> tomcat.service",
+                                "echo 'Type=forking' >> tomcat.service",
+                                "echo 'Environment=JAVA_HOME=/usr/lib/jvm/jre' >> tomcat.service",
+                                "echo 'Environment=CATALINA_PID=/opt/tomcat/temp/tomcat.pid' >> tomcat.service",
+                                "echo 'Environment=CATALINA_HOME=/opt/tomcat' >> tomcat.service",
+                                "echo 'Environment=CATALINA_BASE=/opt/tomcat' >> tomcat.service",
+                                "echo 'Environment=\"CATALINA_OPTS=-Xms512M -Xmx1024M -server -XX:+UseParallelGC\"' >> tomcat.service",
+                                "echo 'Environment=\"JAVA_OPTS=-Djava.awt.headless=true -Djava.security.egd=file:/dev/./urandom -Djava.net.preferIPv4Stack=true -Djava.net.preferIPv4Addresses=true\"' >> tomcat.service",
+                                "echo 'ExecStart=/opt/tomcat/bin/startup.sh' >> tomcat.service",
+                                "echo 'ExecStop=/bin/kill -15 $MAINPID' >> tomcat.service",
+                                "echo 'User=tomcat' >> tomcat.service",
+                                "echo 'Group=tomcat' >> tomcat.service",
+                                "echo 'UMask=0007' >> tomcat.service",
+                                "echo 'RestartSec=10' >> tomcat.service",
+                                "echo 'Restart=always' >> tomcat.service",
+                                "echo '[Install]' >> tomcat.service",
+                                "echo 'WantedBy=multi-user.target' >> tomcat.service",
+                                "sudo systemctl daemon-reload",
+                                "#sudo systemctl start cloudwatch.service",
+                                "#sudo systemctl enable cloudwatch.service",
+                                "sudo systemctl start tomcat.service",
+                                "sudo systemctl enable tomcat.service",
+                                "cd /opt/tomcat/bin",
+                                "touch setenv.sh",
+
+                                {
+                                    "Fn::Join":[
+                                        "",
+                                        [
+                                            "sudo echo \"JAVA_OPTS='-Dspring.datasource.username=csye6225master -Dspring.datasource.password=csye6225password -Dspring.profiles.active=aws -Dspring.datasource.url=jdbc:postgresql://",
+                                            {
+                                                "Fn::GetAtt":[
+                                                    "RDSInstance",
+                                                    "Endpoint.Address"
+                                                ]
+                                            },
+                                            ":5432/",
+                                            {
+                                                "Fn::Join":[
+                                                    "",
+                                                    [                                                       
+                                                        {"Ref":"dbName"}
+                                                    ]
+                                                ]
+                                            },
+                                            " -DamazonProperties.bucketName=",
+                                            {
+                                                "Fn::Join":[
+                                                    "",
+                                                    [
+                                                        {"Ref":"domainName"}
+                                                    ]
+                                                ]                                            
+                                            },
+                                            " -DamazonProperties.endpointUrl=",
+                                            {
+                                                "Fn::GetAtt":[
+                                                    "RDSInstance",
+                                                    "Endpoint.Address"
+                                                ]                                            
+                                            },"'\" >> /opt/tomcat/bin/setenv.sh"
+                                        ]
+                                    ]
+                                },
+                                "sudo systemctl restart tomcat.service",
+
+                                "#Setting up postgresql and pgcrypto",
+                                "sudo postgresql-setup initdb",
+                                "touch /tmp/installPgcrypto.sh",
+                                "sudo chmod +x /tmp/installPgcrypto.sh",
+                                {
+                                    "Fn::Join":[
+                                        "",
+                                        [
+                                            "echo 'PGPASSWORD=",
+                                            {
+                                                "Fn::Join":[
+                                                    "",
+                                                    [
+                                                        {"Ref":"dbPassword"}
+                                                    ]
+                                                ]
+                                            },
+                                            " psql -h ",
+                                            {
+                                                "Fn::GetAtt":[
+                                                    "RDSInstance",
+                                                    "Endpoint.Address"
+                                                ]
+                                            },
+                                            " --port ",
+                                            {
+                                                "Fn::Join":[
+                                                    "",
+                                                    [                                                       
+                                                        {"Ref":"fromDBPort"}
+                                                    ]
+                                                ]
+                                            },
+                                            " --dbname ",
+                                            {
+                                                "Fn::Join":[
+                                                    "",
+                                                    [                                                       
+                                                        {"Ref":"dbName"}
+                                                    ]
+                                                ]
+                                            },
+                                            " --username ",
+                                            {
+                                                "Fn::Join":[
+                                                    "",
+                                                    [
+                                                        {"Ref":"dbUsername"}
+                                                    ]
+                                                ]                                            
+                                            },
+                                            " -c \"CREATE EXTENSION pgcrypto;\"' > /tmp/installPgcrypto.sh" 
+                                            
+                                        ]
+                                    ]
+                                },
+                                
+                                "sudo su - postgres -c \"sh /tmp/installPgcrypto.sh\"",
+                                
+                                "sudo touch /tmp/awslogs.conf",
+                                "sudo echo '[general]' > /tmp/awslogs.conf",
+                                "sudo echo 'state_file= /var/awslogs/agent-state' >> /tmp/awslogs.conf",
+                                "sudo echo '[logstream1]' >> /tmp/awslogs.conf",
+                                "sudo echo 'file = /var/log/tomcat8/csye6225-aws.log' >> /tmp/awslogs.conf",
+                                "sudo echo 'log_group_name = csye6225-webapp' >> /tmp/awslogs.conf",
+                                "sudo echo 'log_stream_name = csye6225-webapp' >> /tmp/awslogs.conf",
+                                "sudo echo 'datetime_format = %d/%b/%Y:%H:%M:%S' >> /tmp/awslogs.conf",
+                                "curl https://s3.amazonaws.com/aws-cloudwatch/downloads/latest/awslogs-agent-setup.py -0",
+                                {
+                                    "Fn::Join":[
+                                        " ",
+                                        [
+                                            "sudo python ./awslogs-agent-setup.py -n -r",
+                                            {
+                                                "Ref":"AWS::Region"
+                                            },
+                                            "-c /tmp/awslogs.conf || error_exit 'Failed to run CloudWatch Logs agent setup'"
+                                        ]
+                                    ]
+                                },
+                                "cd /etc/systemd/system",
+                                "sudo touch awslogs.service",
+                                "sudo echo '[Unit]' >> awslogs.service",
+                                "sudo echo 'Description=Service for CloudWatch Logs agent' >> awslogs.service",
+                                "sudo echo 'After=rc-local.service' >> awslogs.service",
+                                "sudo echo '[Service]' >> awslogs.service",
+                                "sudo echo 'Type=simple' >> awslogs.service",
+                                "sudo echo 'Restart=always' >> awslogs.service",
+                                "sudo echo 'KillMode=process' >> awslogs.service",
+                                "sudo echo 'TimeoutSec=infinity' >> awslogs.service",
+                                "sudo echo 'PIDFile=/var/awslogs/state/awslogs.pid' >> awslogs.service",
+                                "sudo echo 'ExecStart=/var/awslogs/bin/awslogs-agent-launcher.sh --start --background --pidfile $PIDFILE --user awslogs --chuid awslogs &amp;'  >> awslogs.service",
+                                "sudo echo '[Install]' >> awslogs.service",
+                                "sudo echo 'WantedBy=multi-user.target' >> awslogs.service",
+                                "sudo systemctl start awslogs.service",
+                                "sudo systemctl stop awslogs.service",
+                                "sudo systemctl restart awslogs.service",
+                                "sudo systemctl enable awslogs.service"
+                            ]
+                        ]
+                    }
+                }
             },
             "DependsOn":"InstanceSecurityGroup"
         },
@@ -177,7 +395,6 @@
         "S3Bucket" : {
             "Type" : "AWS::S3::Bucket",
             "Properties" : {
-                "AccessControl" : "PublicRead",
                 "BucketName" : {"Ref":"domainName"}
             }
         },
@@ -198,6 +415,23 @@
                 "VPCSecurityGroups":[{"Ref":"DBSecurityGroup"}],
                 "Tags" : [ { "Key" : "Name", "Value" : "My SQL Database" } ]
             }
+        }
+    },
+    "Outputs":{
+        "EC2Instance":{
+            "Description":"The EC2 instance for the application",
+            "Value":{"Ref":"MyEC2Instance"},
+            "Export":{"Name":"EC2Instance"}
+        },
+        "RDSInstance":{
+            "Description":"The RDS instance for attachments",
+            "Value":{"Ref":"RDSInstance"},
+            "Export":{"Name":"RDSInstance"}
+        },
+        "S3Bucket":{
+            "Description":"The S3 bucket to store attachments",
+            "Value":{"Ref":"S3Bucket"},
+            "Export":{"Name":"S3Bucket"}
         }
     }
 }
