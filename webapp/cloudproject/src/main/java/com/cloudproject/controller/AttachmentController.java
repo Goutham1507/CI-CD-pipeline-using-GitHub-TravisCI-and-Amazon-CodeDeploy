@@ -103,7 +103,7 @@ public class AttachmentController {
         System.out.println("-------> EndPointUrl:" + endPointUrl);
         System.out.println("-------> FileName:" + fileName);
         System.out.println("-------> file:" + file.getName());
-        System.out.println("-------> file1:" + file1.exists());
+//        System.out.println("-------> file1:" + file1.exists());
 
 
         s3client.putObject(new PutObjectRequest(bucketName, fileName, file.getInputStream(),objectMetadata));
