@@ -1,7 +1,6 @@
 package com.cloudproject.auth;
 
 import com.cloudproject.bean.User;
-import com.cloudproject.dao.DAO;
 import com.cloudproject.dao.UserDAO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -28,7 +27,7 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
         String name = authentication.getName();
         String password = authentication.getCredentials().toString();
-        User user = dao.checkLogin(name);
+        User user = dao.getUserByUsername(name);
         if(user == null){
             return null;
         }
