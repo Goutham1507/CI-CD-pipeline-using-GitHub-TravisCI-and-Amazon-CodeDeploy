@@ -18,14 +18,13 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
+import java.io.IOException;
 import java.util.*;
 
 @RestController
@@ -37,21 +36,17 @@ public class AttachmentController {
 
     @Autowired
     TransactionDAO transactionDAO;
-    private String profile=System.getProperty("spring.profiles.active");
-
+    @Autowired
+    Properties properties;
+    private String profile = System.getProperty("spring.profiles.active");
     @Value("${amazonProperties.bucketName}")
     private String bucketName;
-
     @Value("${amazonProperties.endpointUrl}")
     private String endPointUrl;
 
     @Autowired
-    Properties properties;
-
-
-    @Autowired
     @Bean
-    public AmazonS3 getAmazonS3Client(){
+    public AmazonS3 getAmazonS3Client() {
         AWSCredentialsProviderChain providerChain = new AWSCredentialsProviderChain(
                 InstanceProfileCredentialsProvider.getInstance(),
                 new ProfileCredentialsProvider()
@@ -63,150 +58,147 @@ public class AttachmentController {
 
 
     @RequestMapping(value = "/transaction/{id}/attachments", method = RequestMethod.GET, produces = "application/json")
-    public ArrayList<Attachment> getAttachment(HttpServletResponse response, Authentication authentication, @PathVariable(value="id") String id){
+    public ArrayList<Attachment> getAttachment(HttpServletResponse response, Authentication authentication, @PathVariable(value = "id") String id) {
         String username = authentication.getName();
 
         ArrayList<Attachment> attachments = attachmentDAO.findByTransactionId(UUID.fromString(id));
-        return  attachments;
+        return attachments;
     }
 
 
     @RequestMapping(value = "/transaction/{id}/attachments", method = RequestMethod.POST, produces = "application/json")
-    public Object createAttachment(HttpServletRequest request, HttpServletResponse response, Authentication authentication, @PathVariable(value="id") String id) {
+    public Object createAttachment(HttpServletRequest request, @RequestParam("file") MultipartFile file, HttpServletResponse response, Authentication authentication, @PathVariable(value = "id") String id) throws IOException {
         Transaction transaction;
-        String transactionId=id;
+        String transactionId = id;
         String url = request.getParameter("url");
-        String fileUrl="";
-        if(url.equals(""))
-        {
+        String fileUrl = "";
+        if (url.equals("")) {
             return new Message("Url cannot be blank!");
         }
+        File file1 = new File("");
+                file.transferTo(file1);
+        String ext = file.getName().substring(file.getName().lastIndexOf("."));
+        String fileName = transactionId + "_" + new Date().getTime() + ext;
 
-            File file = new File(url);
-            String ext= file.getName().substring(file.getName().lastIndexOf("."));
-            String fileName=transactionId + "_" + new Date().getTime()+ext;
 
+        if (!(ext.equalsIgnoreCase(".png") || ext.equalsIgnoreCase(".jpeg") || ext.equalsIgnoreCase(".jpg"))) {
+            return new Message("Unsupported extension! Only .jpg, .jpeg, .png file allowed");
+        }
 
-            if(!(ext.equalsIgnoreCase(".png") || ext.equalsIgnoreCase(".jpeg") || ext.equalsIgnoreCase(".jpg"))){
-                return new Message("Unsupported extension! Only .jpg, .jpeg, .png file allowed");
-            }
+        Attachment attachment = new Attachment(url, UUID.fromString(transactionId));
+        try {
+            transaction = (transactionDAO.findById(UUID.fromString(transactionId))).get();
+        } catch (NoSuchElementException e) {
+            return new Message("No such transaction exists!");
+        }
 
-            Attachment attachment=new Attachment(url, UUID.fromString(transactionId));
-            try {
-                transaction = (transactionDAO.findById(UUID.fromString(transactionId))).get();
-            }catch(NoSuchElementException e){
-                return new Message("No such transaction exists!");
-            }
-
-            attachment.setTransaction(transaction);
+        attachment.setTransaction(transaction);
 
 
 /////////////////////code for s3 upload////////////////////////////////////////////
 
-                AmazonS3 s3client = getAmazonS3Client();
+        AmazonS3 s3client = getAmazonS3Client();
 
-                System.out.println("-------> BucketName:" + bucketName);
-                System.out.println("-------> EndPointUrl:" + endPointUrl);
-                System.out.println("-------> FileName:" + fileName);
-                System.out.println("-------> file:" + file.exists());
+        System.out.println("-------> BucketName:" + bucketName);
+        System.out.println("-------> EndPointUrl:" + endPointUrl);
+        System.out.println("-------> FileName:" + fileName);
+        System.out.println("-------> file:" + file.getName());
+        System.out.println("-------> file1:" + file1.exists());
 
-                s3client.putObject(new PutObjectRequest(bucketName, fileName, file));
-                fileUrl = endPointUrl + "/" + bucketName + "/" + fileName;
+        s3client.putObject(new PutObjectRequest(bucketName, fileName, file1));
+        fileUrl = endPointUrl + "/" + bucketName + "/" + fileName;
 
-            attachment.setUrl(fileUrl);
+        attachment.setUrl(fileUrl);
 
-            attachmentDAO.save(attachment);
-            response.setStatus(HttpServletResponse.SC_OK);
+        attachmentDAO.save(attachment);
+        response.setStatus(HttpServletResponse.SC_OK);
 
-            return attachment;
+        return attachment;
     }
-
 
 
     @RequestMapping(value = "/transaction/{transId}/attachments/{attachID}", method = RequestMethod.DELETE, produces = "application/json")
-    public Message deleteAttachments(HttpServletRequest request, HttpServletResponse response, Authentication auth, @PathVariable(value="transId") String transId, @PathVariable(value="attachID") String attachID) {
+    public Message deleteAttachments(HttpServletRequest request, HttpServletResponse response, Authentication auth, @PathVariable(value = "transId") String transId, @PathVariable(value = "attachID") String attachID) {
 
 
-        UUID getAttachID=null;
+        UUID getAttachID = null;
         String fileName;
         Attachment attachment;
-        String url="";
+        String url = "";
 
-            try{
+        try {
 
-                getAttachID = UUID.fromString(attachID);
-                attachment = (attachmentDAO.findById(getAttachID)).get();
-                url=attachment.getUrl().trim();
-                fileName= url.substring( url.lastIndexOf('/')+1, url.length() ).trim();
-            }catch (Exception e){
-                return new Message("Please enter a valid ID of the Attachment!");
+            getAttachID = UUID.fromString(attachID);
+            attachment = (attachmentDAO.findById(getAttachID)).get();
+            url = attachment.getUrl().trim();
+            fileName = url.substring(url.lastIndexOf('/') + 1, url.length()).trim();
+        } catch (Exception e) {
+            return new Message("Please enter a valid ID of the Attachment!");
+        }
+
+        if ((attachment.getTransaction().getUsername().trim()).equals(auth.getName().trim())) {
+            try {
+
+                AmazonS3 s3client = getAmazonS3Client();
+
+                System.out.println(fileName);
+                s3client.deleteObject(new DeleteObjectRequest(bucketName, fileName));
+                attachmentDAO.deleteById(getAttachID);
+            } catch (EmptyResultDataAccessException e) {
+                return new Message("Transaction does not exist!");
             }
-
-            if((attachment.getTransaction().getUsername().trim()).equals(auth.getName().trim())) {
-                try {
-
-                        AmazonS3 s3client = getAmazonS3Client();
-
-                        System.out.println(fileName);
-                        s3client.deleteObject(new DeleteObjectRequest(bucketName,fileName));
-                    attachmentDAO.deleteById(getAttachID);
-                }catch(EmptyResultDataAccessException e){
-                    return new Message("Transaction does not exist!");
-                }
-                response.setStatus(HttpServletResponse.SC_NO_CONTENT);
-                return new Message("Transaction deleted Successfully!");
-            }else{
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                return new Message("You are not Authorized for this Transaction!");
-            }
+            response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+            return new Message("Transaction deleted Successfully!");
+        } else {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            return new Message("You are not Authorized for this Transaction!");
+        }
     }
 
 
-
     @RequestMapping(value = "/transaction/{transId}/attachments/{attachID}", method = RequestMethod.PUT, produces = "application/json")
-    public Message updateAttachments(HttpServletRequest request, HttpServletResponse response, Authentication auth, @PathVariable(value="transId") String transId, @PathVariable(value="attachID") String attachID) {
+    public Message updateAttachments(HttpServletRequest request, HttpServletResponse response, Authentication auth, @PathVariable(value = "transId") String transId, @PathVariable(value = "attachID") String attachID) {
 
 
-        UUID getAttachID=null;
+        UUID getAttachID = null;
         String fileName;
         Attachment attachment;
-        String url="",fileUrl="";
+        String url = "", fileUrl = "";
 
         String newUrl = request.getParameter("url");
 
-        if(newUrl.equals(""))
-        {
+        if (newUrl.equals("")) {
             return new Message("Url cannot be blank!");
         }
 
-            File newFile = new File(newUrl);
-            String ext= newFile.getName().substring(newFile.getName().lastIndexOf("."));
+        File newFile = new File(newUrl);
+        String ext = newFile.getName().substring(newFile.getName().lastIndexOf("."));
 
-            if(!(ext.equalsIgnoreCase(".png") || ext.equalsIgnoreCase(".jpeg") || ext.equalsIgnoreCase(".jpg"))){
-                return new Message("Unsupported extension! Only .jpg, .jpeg, .png file allowed");
-            }
+        if (!(ext.equalsIgnoreCase(".png") || ext.equalsIgnoreCase(".jpeg") || ext.equalsIgnoreCase(".jpg"))) {
+            return new Message("Unsupported extension! Only .jpg, .jpeg, .png file allowed");
+        }
 
-            try{
-                getAttachID = UUID.fromString(attachID);
-                attachment = (attachmentDAO.findById(getAttachID)).get();
-                url=attachment.getUrl().trim();
-                fileName= url.substring( url.lastIndexOf('/')+1, url.length() ).trim();
-            }catch (Exception e){
-                return new Message("Please enter a valid ID of the Attachment!");
-            }
+        try {
+            getAttachID = UUID.fromString(attachID);
+            attachment = (attachmentDAO.findById(getAttachID)).get();
+            url = attachment.getUrl().trim();
+            fileName = url.substring(url.lastIndexOf('/') + 1, url.length()).trim();
+        } catch (Exception e) {
+            return new Message("Please enter a valid ID of the Attachment!");
+        }
 
-            if((attachment.getTransaction().getUsername().trim()).equals(auth.getName().trim())) {
+        if ((attachment.getTransaction().getUsername().trim()).equals(auth.getName().trim())) {
 
-                    if(!newFile.exists())
-                        return new Message("File does not exists");
+            if (!newFile.exists())
+                return new Message("File does not exists");
 
-                    AmazonS3 s3client = getAmazonS3Client();
-                    s3client.putObject(new PutObjectRequest(bucketName, fileName, newFile));
+            AmazonS3 s3client = getAmazonS3Client();
+            s3client.putObject(new PutObjectRequest(bucketName, fileName, newFile));
 
-            }else{
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                return new Message("You are not Authorized for this Transaction!");
-            }
-            return new Message("Transaction updated");
+        } else {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            return new Message("You are not Authorized for this Transaction!");
+        }
+        return new Message("Transaction updated");
     }
 }
