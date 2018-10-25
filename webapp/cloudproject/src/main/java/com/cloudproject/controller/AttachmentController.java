@@ -70,11 +70,11 @@ public class AttachmentController {
     public Object createAttachment(HttpServletRequest request, @RequestParam("file") MultipartFile file, HttpServletResponse response, Authentication authentication, @PathVariable(value = "id") String id) throws IOException {
         Transaction transaction;
         String transactionId = id;
-        String url = request.getParameter("url");
+//        String url = request.getParameter("url");
         String fileUrl = "";
-        if (url.equals("")) {
-            return new Message("Url cannot be blank!");
-        }
+//        if (url.equals("")) {
+//            return new Message("Url cannot be blank!");
+//        }
         File file1 = new File("");
                 file.transferTo(file1);
         String ext = file.getName().substring(file.getName().lastIndexOf("."));
@@ -85,7 +85,7 @@ public class AttachmentController {
             return new Message("Unsupported extension! Only .jpg, .jpeg, .png file allowed");
         }
 
-        Attachment attachment = new Attachment(url, UUID.fromString(transactionId));
+        Attachment attachment = new Attachment("",UUID.fromString(transactionId));
         try {
             transaction = (transactionDAO.findById(UUID.fromString(transactionId))).get();
         } catch (NoSuchElementException e) {
@@ -157,7 +157,7 @@ public class AttachmentController {
 
 
     @RequestMapping(value = "/transaction/{transId}/attachments/{attachID}", method = RequestMethod.PUT, produces = "application/json")
-    public Message updateAttachments(HttpServletRequest request, HttpServletResponse response, Authentication auth, @PathVariable(value = "transId") String transId, @PathVariable(value = "attachID") String attachID) {
+    public Message updateAttachments(HttpServletRequest request, @RequestParam("file") MultipartFile newFile, HttpServletResponse response, Authentication auth, @PathVariable(value = "transId") String transId, @PathVariable(value = "attachID") String attachID) throws IOException {
 
 
         UUID getAttachID = null;
@@ -171,7 +171,8 @@ public class AttachmentController {
             return new Message("Url cannot be blank!");
         }
 
-        File newFile = new File(newUrl);
+        File newFile1 = new File("");
+        newFile.transferTo(newFile1);
         String ext = newFile.getName().substring(newFile.getName().lastIndexOf("."));
 
         if (!(ext.equalsIgnoreCase(".png") || ext.equalsIgnoreCase(".jpeg") || ext.equalsIgnoreCase(".jpg"))) {
@@ -189,11 +190,11 @@ public class AttachmentController {
 
         if ((attachment.getTransaction().getUsername().trim()).equals(auth.getName().trim())) {
 
-            if (!newFile.exists())
+            if (!newFile1.exists())
                 return new Message("File does not exists");
 
             AmazonS3 s3client = getAmazonS3Client();
-            s3client.putObject(new PutObjectRequest(bucketName, fileName, newFile));
+            s3client.putObject(new PutObjectRequest(bucketName, fileName, newFile1));
 
         } else {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
