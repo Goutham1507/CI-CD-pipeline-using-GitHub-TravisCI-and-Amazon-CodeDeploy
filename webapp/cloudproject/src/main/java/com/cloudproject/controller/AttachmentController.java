@@ -5,7 +5,9 @@ import com.amazonaws.auth.InstanceProfileCredentialsProvider;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.DeleteObjectRequest;
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.cloudproject.bean.Attachment;
 import com.cloudproject.bean.Message;
@@ -70,14 +72,11 @@ public class AttachmentController {
     public Object createAttachment(HttpServletRequest request, @RequestParam("file") MultipartFile file, HttpServletResponse response, Authentication authentication, @PathVariable(value = "id") String id) throws IOException {
         Transaction transaction;
         String transactionId = id;
-//        String url = request.getParameter("url");
         String fileUrl = "";
-//        if (url.equals("")) {
-//            return new Message("Url cannot be blank!");
-//        }
-        File file1 = new File("src/images/"+file.getOriginalFilename());
-//        file1.createNewFile();
-        file.transferTo(file1);
+
+        ObjectMetadata objectMetadata = new ObjectMetadata();
+        objectMetadata.setContentType(file.getContentType());
+
         String ext = file.getName().substring(file.getName().lastIndexOf("."));
         String fileName = transactionId + "_" + new Date().getTime() + ext;
 
@@ -106,7 +105,8 @@ public class AttachmentController {
         System.out.println("-------> file:" + file.getName());
         System.out.println("-------> file1:" + file1.exists());
 
-        s3client.putObject(new PutObjectRequest(bucketName, fileName, file1));
+
+        s3client.putObject(new PutObjectRequest(bucketName, fileName, file.getInputStream(),objectMetadata));
         fileUrl = endPointUrl + "/" + bucketName + "/" + fileName;
 
         attachment.setUrl(fileUrl);
