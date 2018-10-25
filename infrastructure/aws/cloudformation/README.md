@@ -1,6 +1,10 @@
-There are two scripts:
+There are 6 scripts:
 1. "csye6225-aws-cf-create-stack.sh" - This is the script to setup AWS network.
-2. "csye6225-aws-cf-create-application-stack.sh" - This is the script to setup the application.
+2. "csye6255-aws-cf-create-cicd.sh" - This is the script for policies and roles.
+3. "csye6225-aws-cf-create-application-stack.sh" - This is the script to setup the application.
+4. "csye6225-aws-cf-terinate-stack.sh" - This is to terminate the entire network stack.
+5. "csye6255-aws-cf-terminate-cicd.sh" - This is to terminate the entire cicd stack.
+6. "csye6225-aws-cf-terminate-application-stack.sh" - This is to terminate the entire application stack.
 
 Network Setup Script:
 1. The "csye6225-aws-cf-create-stack.sh" takes the stack name from the user, checks whether the satck exists or not.
@@ -11,6 +15,17 @@ Network Setup Script:
 5. The script "csye6225-aws-cf-terminate-stack.sh" for termination also checks if the stack exists or not.
 6. If the stack exists then the script terminates the stack resource and waits for the resource termination.
 7. After successful completion of termination the message is displyed.
+
+Cicd Script:
+1. The "csye6225-aws-cf-create-cicd.sh" creates the roles and policies for the code deployment. 
+2. The following role and policies are present:
+  a. CodeDeployEC2ServiceRole
+  b. CodeDeployServiceRole
+Policies:
+  a. TravisCodeDeploy
+  b. CodeDeployEC2S3
+  c. TravisUploadToS3
+3. The "csye6225-aws-cf-delete-cicd.sh" deletes the roles and policies.
 
 Application Setup Script:
 1. The "csye6225-aws-cf-create-application-stack.sh" takes the stack name from the user, checks whether the satck exists or not.
