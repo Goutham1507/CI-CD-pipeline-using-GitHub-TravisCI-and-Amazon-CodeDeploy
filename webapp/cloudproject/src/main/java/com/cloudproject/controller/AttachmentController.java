@@ -73,13 +73,14 @@ public class AttachmentController {
         Transaction transaction;
         String transactionId = id;
         String fileUrl = "";
+        String ext="";
 
         ObjectMetadata objectMetadata = new ObjectMetadata();
         objectMetadata.setContentType(file.getContentType());
 
         System.out.println("--------------->Filename: "+file.getName());
 
-        String ext = file.getName().substring(file.getName().lastIndexOf("."));
+        ext = file.getName().substring(file.getName().lastIndexOf("."));
         String fileName = transactionId + "_" + new Date().getTime() + ext;
 
 
