@@ -13,7 +13,7 @@ public class Transaction implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(columnDefinition = "BINARY(16)", name = "id")
+    @Column(columnDefinition = "uuid", name = "id")
     private UUID id;
 
     @Column(name="username")

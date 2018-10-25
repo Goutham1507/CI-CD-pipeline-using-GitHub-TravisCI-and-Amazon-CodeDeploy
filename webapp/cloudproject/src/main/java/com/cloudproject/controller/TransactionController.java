@@ -1,9 +1,18 @@
 package com.cloudproject.controller;
 
+import com.amazonaws.auth.AWSCredentialsProviderChain;
+import com.amazonaws.auth.InstanceProfileCredentialsProvider;
+import com.amazonaws.auth.profile.ProfileCredentialsProvider;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.DeleteObjectRequest;
+import com.cloudproject.bean.Attachment;
 import com.cloudproject.bean.Message;
 import com.cloudproject.bean.Transaction;
 import com.cloudproject.dao.TransactionDAO;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,6 +32,25 @@ public class TransactionController {
 
     @Autowired
     TransactionDAO transactionDAO;
+
+    @Value("${amazonProperties.bucketName}")
+    private String bucketName;
+
+    @Value("${amazonProperties.endpointUrl}")
+    private String endPointUrl;
+
+    @Autowired
+    @Bean
+    public AmazonS3 getAmazonS3Client() {
+        AWSCredentialsProviderChain providerChain = new AWSCredentialsProviderChain(
+                InstanceProfileCredentialsProvider.getInstance(),
+                new ProfileCredentialsProvider()
+        );
+        return AmazonS3ClientBuilder.standard()
+                .withCredentials(providerChain)
+                .build();
+    }
+
 
     @RequestMapping(value = "/transaction", method = RequestMethod.GET, produces = "application/json")
     public ArrayList<Transaction> getTransactions(HttpServletResponse response, Authentication authentication){
@@ -148,6 +176,12 @@ public class TransactionController {
 
         if((transaction.getUsername().trim()).equals(auth.getName().trim())) {
             try {
+                AmazonS3 s3client = getAmazonS3Client();
+                for(Attachment a : transaction.getAttachments()){
+                    String url = a.getUrl().trim();
+                    String fileName = url.substring(url.lastIndexOf('/') + 1, url.length()).trim();
+                    s3client.deleteObject(new DeleteObjectRequest(bucketName, fileName));
+                }
                 transactionDAO.deleteById(id);
             }catch(EmptyResultDataAccessException e){
                 return new Message("Transaction does not exist!");
