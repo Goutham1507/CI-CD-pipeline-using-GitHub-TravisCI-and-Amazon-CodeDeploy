@@ -80,7 +80,7 @@ public class AttachmentController {
 
         System.out.println("--------------->Filename: "+file.getOriginalFilename());
 
-        ext = file.getName().substring(file.getOriginalFilename().lastIndexOf("."));
+        ext = file.getOriginalFilename().substring(file.getOriginalFilename().lastIndexOf("."));
         String fileName = transactionId + "_" + new Date().getTime() + ext;
 
 
