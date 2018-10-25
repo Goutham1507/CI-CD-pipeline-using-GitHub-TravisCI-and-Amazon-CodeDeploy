@@ -78,7 +78,7 @@ public class AttachmentController {
         ObjectMetadata objectMetadata = new ObjectMetadata();
         objectMetadata.setContentType(file.getContentType());
 
-        System.out.println("--------------->Filename: "+file.getName());
+        System.out.println("--------------->Filename: "+file.getOriginalFilename());
 
         ext = file.getName().substring(file.getName().lastIndexOf("."));
         String fileName = transactionId + "_" + new Date().getTime() + ext;
