@@ -1,13 +1,8 @@
 package com.cloudproject.controller;
 
 import com.cloudproject.bean.User;
-import com.cloudproject.dao.DAO;
-import com.cloudproject.dao.User1DAO;
 import com.cloudproject.dao.UserDAO;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
-import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -25,7 +20,7 @@ public class loginController {
     BCryptPasswordEncoder bCry;
 
     @Autowired
-    User1DAO dao;
+    UserDAO dao;
 
 
     @RequestMapping(value = "/time", method = RequestMethod.GET)
