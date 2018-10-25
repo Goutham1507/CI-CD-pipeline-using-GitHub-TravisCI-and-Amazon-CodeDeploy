@@ -14,6 +14,8 @@ public class CloudprojectApplication extends SpringBootServletInitializer {
     }
 
     public static void main(String[] args) {
+        System.out.print("----------------------------------------"+System.getenv("SPRING_DATASOURCE_URL")+"-----------");
         SpringApplication.run(CloudprojectApplication.class, args);
+
     }
 }
