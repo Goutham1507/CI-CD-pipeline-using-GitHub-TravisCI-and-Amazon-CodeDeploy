@@ -169,6 +169,9 @@ public class AttachmentController {
         Attachment attachment;
         String url = "", fileUrl = "";
 
+        ObjectMetadata objectMetadata = new ObjectMetadata();
+        objectMetadata.setContentType(newFile.getContentType());
+
         String newUrl = request.getParameter("url");
 
         if (newUrl.equals("")) {
@@ -177,7 +180,7 @@ public class AttachmentController {
 
         File newFile1 = new File("");
         newFile.transferTo(newFile1);
-        String ext = newFile.getName().substring(newFile.getName().lastIndexOf("."));
+        String ext = newFile.getOriginalFilename().substring(newFile.getOriginalFilename().lastIndexOf("."));
 
         if (!(ext.equalsIgnoreCase(".png") || ext.equalsIgnoreCase(".jpeg") || ext.equalsIgnoreCase(".jpg"))) {
             return new Message("Unsupported extension! Only .jpg, .jpeg, .png file allowed");
@@ -198,7 +201,7 @@ public class AttachmentController {
                 return new Message("File does not exists");
 
             AmazonS3 s3client = getAmazonS3Client();
-            s3client.putObject(new PutObjectRequest(bucketName, fileName, newFile1));
+            s3client.putObject(new PutObjectRequest(bucketName, fileName,  newFile.getInputStream(),objectMetadata));
 
         } else {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
