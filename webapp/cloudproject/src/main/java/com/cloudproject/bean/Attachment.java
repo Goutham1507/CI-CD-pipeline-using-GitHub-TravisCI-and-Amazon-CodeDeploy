@@ -12,7 +12,7 @@ public class Attachment {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(columnDefinition = "BINARY(16)", name = "attachmentid")
+    @Column(columnDefinition = "uuid", name = "attachmentid")
     private UUID attachmentid;
 
     @Column(name="url")
