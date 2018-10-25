@@ -105,6 +105,11 @@ public class AttachmentController {
 
                 AmazonS3 s3client = getAmazonS3Client();
 
+                System.out.println("-------> BucketName:" + bucketName);
+                System.out.println("-------> EndPointUrl:" + endPointUrl);
+                System.out.println("-------> FileName:" + fileName);
+                System.out.println("-------> file:" + file.exists());
+
                 s3client.putObject(new PutObjectRequest(bucketName, fileName, file));
                 fileUrl = endPointUrl + "/" + bucketName + "/" + fileName;
 
