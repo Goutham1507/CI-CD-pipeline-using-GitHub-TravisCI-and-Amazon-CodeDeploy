@@ -172,11 +172,8 @@ public class AttachmentController {
         ObjectMetadata objectMetadata = new ObjectMetadata();
         objectMetadata.setContentType(newFile.getContentType());
 
-        String newUrl = request.getParameter("url");
 
-        if (newUrl.equals("")) {
-            return new Message("Url cannot be blank!");
-        }
+
 
         File newFile1 = new File("");
         newFile.transferTo(newFile1);
