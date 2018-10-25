@@ -172,11 +172,6 @@ public class AttachmentController {
         ObjectMetadata objectMetadata = new ObjectMetadata();
         objectMetadata.setContentType(newFile.getContentType());
 
-
-
-
-        File newFile1 = new File("");
-        newFile.transferTo(newFile1);
         String ext = newFile.getOriginalFilename().substring(newFile.getOriginalFilename().lastIndexOf("."));
 
         if (!(ext.equalsIgnoreCase(".png") || ext.equalsIgnoreCase(".jpeg") || ext.equalsIgnoreCase(".jpg"))) {
@@ -193,9 +188,6 @@ public class AttachmentController {
         }
 
         if ((attachment.getTransaction().getUsername().trim()).equals(auth.getName().trim())) {
-
-            if (!newFile1.exists())
-                return new Message("File does not exists");
 
             AmazonS3 s3client = getAmazonS3Client();
             s3client.putObject(new PutObjectRequest(bucketName, fileName,  newFile.getInputStream(),objectMetadata));
