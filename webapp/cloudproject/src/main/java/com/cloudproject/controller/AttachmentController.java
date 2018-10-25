@@ -52,7 +52,11 @@ public class AttachmentController {
     TransactionDAO transactionDAO;
     private String profile=System.getProperty("spring.profiles.active");
 
-    private String bucketName, endPointUrl;
+    @Value("${amazonProperties.bucketName}")
+    private String bucketName;
+
+    @Value("${amazonProperties.endpointUrl}")
+    private String endPointUrl;
 
     @Autowired
     Properties properties;
@@ -68,38 +72,6 @@ public class AttachmentController {
         return AmazonS3ClientBuilder.standard()
                 .withCredentials(providerChain)
                 .build();
-    }
-
-    @Bean
-    public String getBucketProperties(){
-        if("dev".equals(profile)) {
-            Path myPath = Paths.get("src/main/resources/application-dev.properties");
-
-            try {
-                BufferedReader bf = Files.newBufferedReader(myPath,
-                        StandardCharsets.UTF_8);
-
-                properties.load(bf);
-            } catch (IOException ex) {
-                Logger.getLogger(DAO.class.getName()).log(
-                        Level.SEVERE, null, ex);
-            }
-            this.bucketName = properties.getProperty("amazonProperties.bucketName");
-            System.out.println(bucketName);
-            this.endPointUrl = properties.getProperty("amazonProperties.endpointUrl");
-        }
-        else if("aws".equals(profile)){
-            System.out.print("In AWS");
-            properties.setProperty("spring.datasource.url",System.getProperty("spring.datasource.url"));
-            properties.setProperty("spring.datasource.username",System.getProperty("spring.datasource.username"));
-            properties.setProperty("spring.datasource.password",System.getProperty("spring.datasource.password"));
-
-        }
-        else {
-            this.bucketName = null;
-            this.endPointUrl = null;
-        }
-        return null;
     }
 
 
@@ -143,29 +115,12 @@ public class AttachmentController {
 
 
 /////////////////////code for s3 upload////////////////////////////////////////////
-            if("dev".equalsIgnoreCase(profile))
-            {
-                getBucketProperties();
 
                 AmazonS3 s3client = getAmazonS3Client();
 
                 s3client.putObject(new PutObjectRequest(bucketName, fileName, file));
                 fileUrl = endPointUrl + "/" + bucketName + "/" + fileName;
 
-            }
-            /////////////////////code for s3////////////////////////////////////////////
-
-            else{
-                fileUrl="src/images/"+fileName;
-                try {
-                    Files.copy(new File(url).toPath(),new File(fileUrl).toPath());
-                } catch (FileNotFoundException e) {
-                    return new Message("File not found");
-                } catch (IOException e) {
-                    return new Message("File not found");
-                }
-
-            }
             attachment.setUrl(fileUrl);
 
             attachmentDAO.save(attachment);
@@ -197,21 +152,11 @@ public class AttachmentController {
 
             if((attachment.getTransaction().getUsername().trim()).equals(auth.getName().trim())) {
                 try {
-                    if("dev".equalsIgnoreCase(profile)){
-                        getBucketProperties();
-
 
                         AmazonS3 s3client = getAmazonS3Client();
 
                         System.out.println(fileName);
                         s3client.deleteObject(new DeleteObjectRequest(bucketName,fileName));
-                    }else{
-                        File file = new File(url);
-                        System.out.println(url);
-                        if(!file.delete()){
-                            return new Message("File not found");
-                        }
-                    }
                     attachmentDAO.deleteById(getAttachID);
                 }catch(EmptyResultDataAccessException e){
                     return new Message("Transaction does not exist!");
@@ -260,31 +205,11 @@ public class AttachmentController {
 
             if((attachment.getTransaction().getUsername().trim()).equals(auth.getName().trim())) {
 
-                if("dev".equalsIgnoreCase(profile)){
-
                     if(!newFile.exists())
                         return new Message("File does not exists");
 
-                    getBucketProperties();
                     AmazonS3 s3client = getAmazonS3Client();
                     s3client.putObject(new PutObjectRequest(bucketName, fileName, newFile));
-                }else{
-                    try {
-                        File newFile2 = new File(newUrl);
-                        File file = new File(url);
-
-                        if(!newFile2.exists())
-                            return new Message("File does not exists");
-
-                        if(!file.delete()){
-                            return new Message("File not found src");
-                        }
-                        Files.copy(new File(newUrl).toPath(),new File(url).toPath());
-
-                    } catch (Exception e) {
-                        return new Message("File not found");
-                    }
-                }
 
             }else{
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
