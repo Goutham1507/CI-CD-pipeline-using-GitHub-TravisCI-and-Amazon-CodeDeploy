@@ -16,7 +16,7 @@ if  aws cloudformation describe-stacks --stack-name $stack_name ; then
 
 	echo "\nWaiting for stack to be terminated ..."
 
-	aws_domain_name=$(aws route53 list-hosted-zones --query 'HostedZones[0].Name' --output text)csye6225.com
+	aws_domain_name=code-deploy.$(aws route53 list-hosted-zones --query 'HostedZones[0].Name' --output text)csye6225.com
 	aws_bucket_list=$(aws s3api list-buckets --query "Buckets[].Name")
 	
 	for i in $aws_bucket_list
