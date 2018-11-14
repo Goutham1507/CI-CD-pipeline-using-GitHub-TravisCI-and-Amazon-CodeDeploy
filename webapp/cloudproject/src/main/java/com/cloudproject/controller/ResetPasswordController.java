@@ -40,10 +40,9 @@ public class ResetPasswordController {
 
     @GetMapping("/reset")
     public Message resetPassword(Authentication authentication) {
-        metric.incrementCounter("endpoint.test.http.get");
+        metric.incrementCounter("endpoint.reset.http.get");
         AmazonSNS amazonSNS = getAmazonSNS();
 
-        String msg = "Testing";
         String username = authentication.getName();
         System.out.println("Username:" + username);
         PublishRequest publishRequest = new PublishRequest(topicArn, username);
