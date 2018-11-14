@@ -1,7 +1,9 @@
 package com.cloudproject.controller;
 
+import com.cloudproject.bean.MetricsBean;
 import com.cloudproject.bean.User;
 import com.cloudproject.dao.UserDAO;
+import com.timgroup.statsd.StatsDClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -22,9 +24,12 @@ public class loginController {
     @Autowired
     UserDAO dao;
 
+    @Autowired
+    private StatsDClient metric;
 
     @RequestMapping(value = "/time", method = RequestMethod.GET)
     public Map<String, String> login(HttpServletRequest request) throws UnsupportedEncodingException {
+        metric.incrementCounter("endpoint.test.http.get");
 
         System.out.print("----------------------------------------"+System.getenv("SPRING_DATASOURCE_URL")+"-----------");
         String message;
@@ -46,7 +51,7 @@ public class loginController {
 
     @RequestMapping(value = "/user/register", method = RequestMethod.POST)
     public Map<String, String> register(HttpServletRequest request) throws UnsupportedEncodingException {
-
+        metric.incrementCounter("endpoint.test.http.post");
         String message;
 
         String userName = request.getParameter("username");
