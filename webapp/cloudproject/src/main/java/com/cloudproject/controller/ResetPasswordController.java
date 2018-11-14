@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class ResetPasswordController {
-    
+
     @Value("${sns.topicARN}")
     private String topicArn;
 
