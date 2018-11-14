@@ -58,7 +58,7 @@ public class TransactionController {
 
     @RequestMapping(value = "/transaction", method = RequestMethod.GET, produces = "application/json")
     public ArrayList<Transaction> getTransactions(HttpServletResponse response, Authentication authentication){
-        metric.incrementCounter("endpoint.test.http.get");
+        metric.incrementCounter("endpoint.transaction.http.get");
         String username = authentication.getName();
         //ArrayList<Transaction> transactions = transactionDAO.getTransactions(username);
         ArrayList<Transaction> transactions = (ArrayList<Transaction>) transactionDAO.findByUsername(username);
@@ -71,7 +71,7 @@ public class TransactionController {
 
     @RequestMapping(value = "/transaction", method = RequestMethod.POST, produces = "application/json")
     public Object createTransactions(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
-        metric.incrementCounter("endpoint.test.http.post");
+        metric.incrementCounter("endpoint.transaction.http.post");
         String description = request.getParameter("description");
         String merchant = request.getParameter("merchant");
         String amount = request.getParameter("amount");
@@ -111,7 +111,7 @@ public class TransactionController {
 
     @RequestMapping(value = "/transaction/*", method = RequestMethod.PUT, produces = "application/json")
     public Object putTransactions(HttpServletRequest request, HttpServletResponse response, Authentication auth) {
-        metric.incrementCounter("endpoint.test.http.put");
+        metric.incrementCounter("endpoint.transaction.http.put");
         StringTokenizer tokenizer = new StringTokenizer(request.getRequestURI(),"/");
         tokenizer.nextToken();
         UUID id = null;
@@ -170,7 +170,7 @@ public class TransactionController {
 
     @RequestMapping(value = "/transaction/*", method = RequestMethod.DELETE, produces = "application/json")
     public Message deleteTransaction(HttpServletRequest request, HttpServletResponse response, Authentication auth) {
-        metric.incrementCounter("endpoint.test.http.delete");
+        metric.incrementCounter("endpoint.transaction.http.delete");
         StringTokenizer tokenizer = new StringTokenizer(request.getRequestURI(),"/");
         tokenizer.nextToken();
 
