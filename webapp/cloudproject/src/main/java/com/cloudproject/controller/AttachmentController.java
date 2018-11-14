@@ -72,7 +72,7 @@ public class AttachmentController {
 
     @RequestMapping(value = "/transaction/{id}/attachments", method = RequestMethod.GET, produces = "application/json")
     public ArrayList<Attachment> getAttachment(HttpServletResponse response, Authentication authentication, @PathVariable(value = "id") String id) {
-        metric.incrementCounter("endpoint.test.http.get");
+        metric.incrementCounter("endpoint.attachment.http.get");
 
         String username = authentication.getName();
 
@@ -83,7 +83,7 @@ public class AttachmentController {
 
     @RequestMapping(value = "/transaction/{id}/attachments", method = RequestMethod.POST, produces = "application/json")
     public Object createAttachment(HttpServletRequest request, @RequestParam("file") MultipartFile file, HttpServletResponse response, Authentication authentication, @PathVariable(value = "id") String id) throws IOException {
-        metric.incrementCounter("endpoint.test.http.post");
+        metric.incrementCounter("endpoint.attachment.http.post");
 
         Transaction transaction;
         String transactionId = id;
@@ -139,7 +139,7 @@ public class AttachmentController {
     @RequestMapping(value = "/transaction/{transId}/attachments/{attachID}", method = RequestMethod.DELETE, produces = "application/json")
     public Message deleteAttachments(HttpServletRequest request, HttpServletResponse response, Authentication auth, @PathVariable(value = "transId") String transId, @PathVariable(value = "attachID") String attachID) {
 
-        metric.incrementCounter("endpoint.test.http.delete");
+        metric.incrementCounter("endpoint.attachment.http.delete");
 
         UUID getAttachID = null;
         String fileName;
@@ -178,7 +178,7 @@ public class AttachmentController {
 
     @RequestMapping(value = "/transaction/{transId}/attachments/{attachID}", method = RequestMethod.PUT, produces = "application/json")
     public Message updateAttachments(HttpServletRequest request, @RequestParam("file") MultipartFile newFile, HttpServletResponse response, Authentication auth, @PathVariable(value = "transId") String transId, @PathVariable(value = "attachID") String attachID) throws IOException {
-        metric.incrementCounter("endpoint.test.http.put");
+        metric.incrementCounter("endpoint.attachment.http.put");
 
         UUID getAttachID = null;
         String fileName;
