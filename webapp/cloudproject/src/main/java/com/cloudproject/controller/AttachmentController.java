@@ -72,7 +72,7 @@ public class AttachmentController {
 
     @RequestMapping(value = "/transaction/{id}/attachments", method = RequestMethod.GET, produces = "application/json")
     public ArrayList<Attachment> getAttachment(HttpServletResponse response, Authentication authentication, @PathVariable(value = "id") String id) {
-        metric.incrementCounter("endpoint.test.http.get");
+        metric.incrementCounter("endpoint.transaction.http.get");
 
         String username = authentication.getName();
 
@@ -83,7 +83,7 @@ public class AttachmentController {
 
     @RequestMapping(value = "/transaction/{id}/attachments", method = RequestMethod.POST, produces = "application/json")
     public Object createAttachment(HttpServletRequest request, @RequestParam("file") MultipartFile file, HttpServletResponse response, Authentication authentication, @PathVariable(value = "id") String id) throws IOException {
-        metric.incrementCounter("endpoint.test.http.post");
+        metric.incrementCounter("endpoint.transaction.http.post");
 
         Transaction transaction;
         String transactionId = id;
