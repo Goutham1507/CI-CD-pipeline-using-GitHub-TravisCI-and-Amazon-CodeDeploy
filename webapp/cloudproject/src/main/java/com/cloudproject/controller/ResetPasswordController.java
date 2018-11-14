@@ -21,9 +21,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class ResetPasswordController {
-
-    @Value("${snsTopicARN}")
-    String topicArn;
+    
+    @Value("${sns.topicARN}")
+    private String topicArn;
 
     @Autowired
     private StatsDClient metric;
