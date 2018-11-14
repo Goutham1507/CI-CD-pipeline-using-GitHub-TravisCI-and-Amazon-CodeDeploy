@@ -29,7 +29,7 @@ public class loginController {
 
     @RequestMapping(value = "/time", method = RequestMethod.GET)
     public Map<String, String> login(HttpServletRequest request) throws UnsupportedEncodingException {
-        metric.incrementCounter("endpoint.test.http.get");
+        metric.incrementCounter("endpoint.time.http.get");
 
         System.out.print("----------------------------------------"+System.getenv("SPRING_DATASOURCE_URL")+"-----------");
         String message;
@@ -51,7 +51,7 @@ public class loginController {
 
     @RequestMapping(value = "/user/register", method = RequestMethod.POST)
     public Map<String, String> register(HttpServletRequest request) throws UnsupportedEncodingException {
-        metric.incrementCounter("endpoint.test.http.post");
+        metric.incrementCounter("endpoint.user.http.post");
         String message;
 
         String userName = request.getParameter("username");
