@@ -1,0 +1,69 @@
+{
+    "AWSTemplateFormatVersion":"2010-09-09",
+    "Description":"Serverless Stack for lambda",
+    "Parameters":{
+        "LambdaFunctionName":{
+            "Type":"String",
+            "Default":"index"
+        },
+        "LambdaHandler":{
+            "Type":"String",
+            "Default":"index.handler"
+        },
+        "domainName":{
+            "Type":"String",
+            "Default":"abc@csye6225.me"
+        },
+        "S3Bucketlambda":{
+            "Type":"String",
+            "Default":"lambda.abc.csye6225.me"
+        },
+        "LambdaZipFile":{
+            "Type":"String",
+            "Default":"LambdaApp.zip"
+        }
+    },
+    "Resources":{
+        "MyAWSLambda": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+                "FunctionName": {"Ref":"LambdaFunctionName"},
+                "Handler": {"Ref":"LambdaHandler"},
+                "Tags":[{"Key":"LambdaKey","Value":"LambdaValue"}],
+                "Environment":{
+                    "Variables":{"domainName":{"Ref":"domainName"}}
+                },
+                "Role": {"Fn::ImportValue":"LambdaExecutionRoleARN"},
+                "Timeout": "30",
+                "Runtime": "nodejs8.10",
+                "Code": {
+                    "S3Bucket":{"Ref":"S3Bucketlambda"},
+                    "S3Key":{"Ref":"LambdaZipFile"}
+                }
+            }
+        },
+        "LambdaInvokePermission": {
+            "Type": "AWS::Lambda::Permission",
+            "Properties": {
+                "FunctionName": {
+                    "Fn::GetAtt": [
+                        "MyAWSLambda",
+                        "Arn"
+                    ]
+                },
+                "Action": "lambda:InvokeFunction",
+                "Principal": "sns.amazonaws.com",
+                "SourceArn": {"Fn::ImportValue":"MySNS"}
+            },
+            "DependsOn":"MyAWSLambda"
+        },
+        "SNSSubscription":{
+            "Type":"AWS::SNS::Subscription",
+            "Properties":{
+                "TopicArn":{"Fn::ImportValue":"MySNS"},
+                "Endpoint": { "Fn::GetAtt" : [ "MyAWSLambda", "Arn" ] },
+                "Protocol":"lambda"
+            }
+        }
+    }
+}
