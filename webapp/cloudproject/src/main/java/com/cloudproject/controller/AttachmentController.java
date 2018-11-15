@@ -11,9 +11,12 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.cloudproject.bean.Attachment;
 import com.cloudproject.bean.Message;
+import com.cloudproject.bean.MetricsBean;
 import com.cloudproject.bean.Transaction;
 import com.cloudproject.dao.AttachmentDAO;
 import com.cloudproject.dao.TransactionDAO;
+import com.timgroup.statsd.StatsDClient;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -28,21 +31,29 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.logging.Logger;
 
 @RestController
 @PropertySource("classpath:application.properties")
 public class AttachmentController {
 
     @Autowired
+    private StatsDClient metric;
+
+    @Autowired
     AttachmentDAO attachmentDAO;
 
     @Autowired
     TransactionDAO transactionDAO;
+
     @Autowired
     Properties properties;
+
     private String profile = System.getProperty("spring.profiles.active");
+
     @Value("${amazonProperties.bucketName}")
     private String bucketName;
+
     @Value("${amazonProperties.endpointUrl}")
     private String endPointUrl;
 
@@ -61,6 +72,8 @@ public class AttachmentController {
 
     @RequestMapping(value = "/transaction/{id}/attachments", method = RequestMethod.GET, produces = "application/json")
     public ArrayList<Attachment> getAttachment(HttpServletResponse response, Authentication authentication, @PathVariable(value = "id") String id) {
+        metric.incrementCounter("endpoint.attachment.http.get");
+
         String username = authentication.getName();
 
         ArrayList<Attachment> attachments = attachmentDAO.findByTransactionId(UUID.fromString(id));
@@ -70,6 +83,8 @@ public class AttachmentController {
 
     @RequestMapping(value = "/transaction/{id}/attachments", method = RequestMethod.POST, produces = "application/json")
     public Object createAttachment(HttpServletRequest request, @RequestParam("file") MultipartFile file, HttpServletResponse response, Authentication authentication, @PathVariable(value = "id") String id) throws IOException {
+        metric.incrementCounter("endpoint.attachment.http.post");
+
         Transaction transaction;
         String transactionId = id;
         String fileUrl = "";
@@ -124,6 +139,7 @@ public class AttachmentController {
     @RequestMapping(value = "/transaction/{transId}/attachments/{attachID}", method = RequestMethod.DELETE, produces = "application/json")
     public Message deleteAttachments(HttpServletRequest request, HttpServletResponse response, Authentication auth, @PathVariable(value = "transId") String transId, @PathVariable(value = "attachID") String attachID) {
 
+        metric.incrementCounter("endpoint.attachment.http.delete");
 
         UUID getAttachID = null;
         String fileName;
@@ -162,7 +178,7 @@ public class AttachmentController {
 
     @RequestMapping(value = "/transaction/{transId}/attachments/{attachID}", method = RequestMethod.PUT, produces = "application/json")
     public Message updateAttachments(HttpServletRequest request, @RequestParam("file") MultipartFile newFile, HttpServletResponse response, Authentication auth, @PathVariable(value = "transId") String transId, @PathVariable(value = "attachID") String attachID) throws IOException {
-
+        metric.incrementCounter("endpoint.attachment.http.put");
 
         UUID getAttachID = null;
         String fileName;

@@ -8,8 +8,10 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.DeleteObjectRequest;
 import com.cloudproject.bean.Attachment;
 import com.cloudproject.bean.Message;
+import com.cloudproject.bean.MetricsBean;
 import com.cloudproject.bean.Transaction;
 import com.cloudproject.dao.TransactionDAO;
+import com.timgroup.statsd.StatsDClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -36,6 +38,9 @@ public class TransactionController {
     @Value("${amazonProperties.bucketName}")
     private String bucketName;
 
+    @Autowired
+    private StatsDClient metric;
+
     @Value("${amazonProperties.endpointUrl}")
     private String endPointUrl;
 
@@ -51,9 +56,9 @@ public class TransactionController {
                 .build();
     }
 
-
     @RequestMapping(value = "/transaction", method = RequestMethod.GET, produces = "application/json")
     public ArrayList<Transaction> getTransactions(HttpServletResponse response, Authentication authentication){
+        metric.incrementCounter("endpoint.transaction.http.get");
         String username = authentication.getName();
         //ArrayList<Transaction> transactions = transactionDAO.getTransactions(username);
         ArrayList<Transaction> transactions = (ArrayList<Transaction>) transactionDAO.findByUsername(username);
@@ -66,6 +71,7 @@ public class TransactionController {
 
     @RequestMapping(value = "/transaction", method = RequestMethod.POST, produces = "application/json")
     public Object createTransactions(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
+        metric.incrementCounter("endpoint.transaction.http.post");
         String description = request.getParameter("description");
         String merchant = request.getParameter("merchant");
         String amount = request.getParameter("amount");
@@ -105,6 +111,7 @@ public class TransactionController {
 
     @RequestMapping(value = "/transaction/*", method = RequestMethod.PUT, produces = "application/json")
     public Object putTransactions(HttpServletRequest request, HttpServletResponse response, Authentication auth) {
+        metric.incrementCounter("endpoint.transaction.http.put");
         StringTokenizer tokenizer = new StringTokenizer(request.getRequestURI(),"/");
         tokenizer.nextToken();
         UUID id = null;
@@ -163,6 +170,7 @@ public class TransactionController {
 
     @RequestMapping(value = "/transaction/*", method = RequestMethod.DELETE, produces = "application/json")
     public Message deleteTransaction(HttpServletRequest request, HttpServletResponse response, Authentication auth) {
+        metric.incrementCounter("endpoint.transaction.http.delete");
         StringTokenizer tokenizer = new StringTokenizer(request.getRequestURI(),"/");
         tokenizer.nextToken();
 
