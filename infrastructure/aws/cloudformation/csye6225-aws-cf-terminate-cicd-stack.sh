@@ -22,6 +22,7 @@ if  aws cloudformation describe-stacks --stack-name $stack_name ; then
 	for i in $aws_bucket_list
 	do
 		j=${i//\"}
+		j=${i//\,}
 		if [ $j == ${aws_domain_name:0:-1} ]
 		then	
 			bucket_name=$j
