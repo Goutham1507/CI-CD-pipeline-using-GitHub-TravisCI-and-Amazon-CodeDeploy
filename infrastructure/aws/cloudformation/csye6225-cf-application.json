@@ -217,8 +217,6 @@
                                 "echo '[Install]' >> tomcat.service",
                                 "echo 'WantedBy=multi-user.target' >> tomcat.service",
                                 "sudo systemctl daemon-reload",
-                                "#sudo systemctl start cloudwatch.service",
-                                "#sudo systemctl enable cloudwatch.service",
                                 "sudo systemctl start tomcat.service",
                                 "sudo systemctl enable tomcat.service",
                                 "cd /opt/tomcat/bin",
@@ -259,7 +257,16 @@
                                                     "RDSInstance",
                                                     "Endpoint.Address"
                                                 ]                                            
-                                            },"'\" >> /opt/tomcat/bin/setenv.sh"
+                                            },
+                                            " -Dsns.topic.arn=",
+                                            {
+                                                "Ref":"MySNS"
+                                            },
+                                            " -DdomainName=",
+                                            {
+                                                "Ref":"domainName"
+                                            },
+                                            "'\" >> /opt/tomcat/bin/setenv.sh"
                                         ]
                                     ]
                                 },
@@ -324,51 +331,25 @@
                                 
                                 "sudo su - postgres -c \"sh /tmp/installPgcrypto.sh\"",
                                 
-                                "sudo touch /tmp/awslogs.conf",
-                                "sudo echo '[general]' > /tmp/awslogs.conf",
-                                "sudo echo 'state_file= /var/awslogs/agent-state' >> /tmp/awslogs.conf",
-                                "sudo echo '[logstream1]' >> /tmp/awslogs.conf",
-                                "sudo echo 'file = /var/log/tomcat8/csye6225-aws.log' >> /tmp/awslogs.conf",
-                                "sudo echo 'log_group_name = csye6225-webapp' >> /tmp/awslogs.conf",
-                                "sudo echo 'log_stream_name = csye6225-webapp' >> /tmp/awslogs.conf",
-                                "sudo echo 'datetime_format = %d/%b/%Y:%H:%M:%S' >> /tmp/awslogs.conf",
-                                "curl https://s3.amazonaws.com/aws-cloudwatch/downloads/latest/awslogs-agent-setup.py -0",
-                                {
-                                    "Fn::Join":[
-                                        " ",
-                                        [
-                                            "sudo python ./awslogs-agent-setup.py -n -r",
-                                            {
-                                                "Ref":"AWS::Region"
-                                            },
-                                            "-c /tmp/awslogs.conf || error_exit 'Failed to run CloudWatch Logs agent setup'"
-                                        ]
-                                    ]
-                                },
-                                "cd /etc/systemd/system",
-                                "sudo touch awslogs.service",
-                                "sudo echo '[Unit]' >> awslogs.service",
-                                "sudo echo 'Description=Service for CloudWatch Logs agent' >> awslogs.service",
-                                "sudo echo 'After=rc-local.service' >> awslogs.service",
-                                "sudo echo '[Service]' >> awslogs.service",
-                                "sudo echo 'Type=simple' >> awslogs.service",
-                                "sudo echo 'Restart=always' >> awslogs.service",
-                                "sudo echo 'KillMode=process' >> awslogs.service",
-                                "sudo echo 'TimeoutSec=infinity' >> awslogs.service",
-                                "sudo echo 'PIDFile=/var/awslogs/state/awslogs.pid' >> awslogs.service",
-                                "sudo echo 'ExecStart=/var/awslogs/bin/awslogs-agent-launcher.sh --start --background --pidfile $PIDFILE --user awslogs --chuid awslogs &amp;'  >> awslogs.service",
-                                "sudo echo '[Install]' >> awslogs.service",
-                                "sudo echo 'WantedBy=multi-user.target' >> awslogs.service",
-                                "sudo systemctl start awslogs.service",
-                                "sudo systemctl stop awslogs.service",
-                                "sudo systemctl restart awslogs.service",
-                                "sudo systemctl enable awslogs.service"
+                                "sudo yum install -y https://s3.amazonaws.com/amazoncloudwatch-agent/centos/amd64/latest/amazon-cloudwatch-agent.rpm",
+                               "sudo touch /opt/cloudwatch-config.json",
+                               "sudo echo '{\"agent\": {\"metrics_collection_interval\": 10,\"logfile\": \"/var/logs/amazon-cloudwatch-agent.log\"},' > /opt/cloudwatch-config.json",
+                               "sudo echo '\"logs\": {\"logs_collected\": {\"files\": {\"collect_list\": [{\"file_path\": \"/opt/tomcat/logs/catalina.out\",\"log_group_name\": \"csye6225_fall2018\",\"log_stream_name\": \"webapp\",\"timestamp_format\": \"%H:%M:%S %y %b %-d\"}]}},\"log_stream_name\": \"cloudwatch_log_stream\"},' >> /opt/cloudwatch-config.json",
+                               "sudo echo '\"metrics\":{\"metrics_collected\":{\"statsd\":{\"service_address\":\":8125\",\"metrics_collection_interval\":10,\"metrics_aggregation_interval\":0}}}}' >> /opt/cloudwatch-config.json",                                "sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/cloudwatch-config.json -s",                                "sudo wget https://s3.amazonaws.com/amazoncloudwatch-agent/centos/amd64/latest/amazon-cloudwatch-agent.rpm",
+                               "sudo rpm -U ./amazon-cloudwatch-agent.rpm",
+                               "sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/cloudwatch-config.json -s",
+                               "cd /opt",
+                               "sudo wget https://s3.amazonaws.com/configfileforcloudwatch/amazon-cloudwatch-agent.service",
+                               "sudo cp amazon-cloudwatch-agent.service /usr/lib/systemd/system/",
+                               "sudo systemctl enable amazon-cloudwatch-agent.service",
+                               "sudo systemctl start amazon-cloudwatch-agent.service",
+                               "echo 'successful'"
                             ]
                         ]
                     }
                 }
             },
-            "DependsOn":"InstanceSecurityGroup"
+            "DependsOn":["InstanceSecurityGroup","MySNS"]
         },
         "myDynamoDBTable" : {
             "Type" : "AWS::DynamoDB::Table",
@@ -389,8 +370,12 @@
                     "ReadCapacityUnits" : "5",
                     "WriteCapacityUnits" : "5"
                 },
-                "TableName" : {"Ref":"tableName"}
+                "TableName" : {"Ref":"tableName"},
+                "TimeToLiveSpecification":{
+                    "AttributeName":"TTL",
+                    "Enabled":"true"
                 }
+            }
         },   
         "S3Bucket" : {
             "Type" : "AWS::S3::Bucket",
@@ -415,6 +400,13 @@
                 "VPCSecurityGroups":[{"Ref":"DBSecurityGroup"}],
                 "Tags" : [ { "Key" : "Name", "Value" : "My SQL Database" } ]
             }
+        },
+        "MySNS":{
+            "Type":"AWS::SNS::Topic",
+            "Properties":{
+                "DisplayName":"MySNS",
+                "TopicName":"MySNS"
+            }
         }
     },
     "Outputs":{
@@ -432,6 +424,20 @@
             "Description":"The S3 bucket to store attachments",
             "Value":{"Ref":"S3Bucket"},
             "Export":{"Name":"S3Bucket"}
+        },
+        "MySNS":{
+            "Description":"The SNS Topic",
+            "Value":{"Ref":"MySNS"},
+            "Export":{"Name":"MySNS"}
+        },
+        "EC2PublicDnsName":{
+            "Description":"Fetch the public dns name of EC2 instance",
+            "Value":{
+                "Fn::GetAtt":[
+                    "MyEC2Instance",
+                    "PublicDnsName"
+                ]
+            }
         }
     }
 }
