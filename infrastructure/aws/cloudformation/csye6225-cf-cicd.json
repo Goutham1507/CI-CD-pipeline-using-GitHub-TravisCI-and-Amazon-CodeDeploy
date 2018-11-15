@@ -63,7 +63,7 @@
                     {"Fn::Join": ["",[ "arn:aws:iam:",":",{ "Ref": "AWS::AccountId"},":","policy","/","SNSPolicy"]]}
                 ],
                 "Path": "/",
-                "RoleName": "CodeDeployEC2ServiceRole"
+                "RoleName": ["CodeDeployEC2ServiceRole","SNSPolicy"]
             },
             "DependsOn": "CodeDeployEC2S3"
         },
