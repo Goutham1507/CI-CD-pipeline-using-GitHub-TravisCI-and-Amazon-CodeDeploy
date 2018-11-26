@@ -29,15 +29,7 @@
         "SesDomainName":{
             "Type":"String",
             "Default":"abc2127.me"
-        },
-        "CodeDeployAppName":{
-            "Type":"String",
-            "Default":"csye6225-fall2018"
-        },
-        "AppDeploymentGroup":{
-            "Type":"String",
-            "Default":"csye6225-fall2018-DeploymentGroup"
-        } 
+        }
     },
     "Resources": {
         "CodeDeployEC2ServiceRole": {
@@ -129,51 +121,6 @@
                 "InstanceProfileName": "EC2ServiceRoleInstanceProfile"
             },
             "DependsOn": "CodeDeployEC2ServiceRole"
-        },
-        "TravisCodeDeploy": {
-            "Type": "AWS::IAM::ManagedPolicy",
-            "Properties": {
-                "Description": "This policy allows TravisCI to call CodeDeploy APIs to initiate application deployment on EC2 instances.",
-                "Path": "/",
-                "PolicyDocument": {
-                    "Version": "2012-10-17",
-                    "Statement": [
-                        {
-                            "Effect": "Allow",
-                            "Action": [
-                                "codedeploy:RegisterApplicationRevision",
-                                "codedeploy:GetApplicationRevision"
-                            ],
-                            "Resource": [
-                                {"Fn::Join": ["",["arn:aws:codedeploy:",{"Ref": "AWS::Region"},":",{"Ref": "AWS::AccountId"},":","CodeDeployApp"]]}
-                            ]
-                        },
-                        {
-                            "Effect": "Allow",
-                            "Action": [
-                                "codedeploy:CreateDeployment",
-                                "codedeploy:GetDeployment"
-                            ],
-                            "Resource": ["*"]
-                        },
-                        {
-                            "Effect": "Allow",
-                            "Action": [
-                                "codedeploy:GetDeploymentConfig"
-                            ],
-                            "Resource": [
-                                {"Fn::Join": ["",["arn:aws:codedeploy:",{"Ref": "AWS::Region"},":",{"Ref": "AWS::AccountId"},":deploymentconfig:CodeDeployDefault.OneAtATime"]]},
-                                {"Fn::Join": ["",["arn:aws:codedeploy:",{"Ref": "AWS::Region"},":",{"Ref": "AWS::AccountId"},":deploymentconfig:CodeDeployDefault.HalfAtATime"]]},
-                                {"Fn::Join": ["",["arn:aws:codedeploy:",{"Ref": "AWS::Region"},":",{"Ref": "AWS::AccountId"},":deploymentconfig:CodeDeployDefault.AllAtOnce"]]}
-                            ]
-                        }
-                    ]
-                },
-                "Users": [
-                    {"Ref": "TravisUser"}
-                ]
-            },
-            "DependsOn": "CodeDeployApp"
         },
         "CodeDeployEC2S3": {
             "Type": "AWS::IAM::ManagedPolicy",
@@ -286,7 +233,7 @@
                         {
                             "Effect": "Allow",
                             "Action":[
-                                "SNS:*"
+                                "SNS:Publish"
                             ],
                             "Resource":["*"]
                         }
@@ -302,39 +249,6 @@
                     "Ref": "S3BucketCodeDeployDomain"
                 }
             }
-        },
-        "CodeDeployApp": {
-            "Type": "AWS::CodeDeploy::Application",
-            "Properties": {
-                "ApplicationName": {"Ref":"CodeDeployAppName"},
-                "ComputePlatform": "Server"
-            }
-        },
-        "DeploymentGroup": {
-            "Type": "AWS::CodeDeploy::DeploymentGroup",
-            "Properties": {
-                "ApplicationName": {"Ref":"CodeDeployAppName"},
-                "DeploymentGroupName": {"Ref":"AppDeploymentGroup"},
-                "DeploymentConfigName": "CodeDeployDefault.AllAtOnce",
-                "DeploymentStyle": {
-                    "DeploymentOption": "WITHOUT_TRAFFIC_CONTROL",
-                    "DeploymentType": "IN_PLACE"
-                },
-                "Ec2TagFilters": [
-                    {
-                        "Key": { "Ref": "TagKey" },
-                        "Value": { "Ref": "TagValue" },
-                        "Type": "KEY_AND_VALUE"
-                    }
-                ],
-                "ServiceRoleArn": {
-                    "Fn::GetAtt": [
-                        "CodeDeployServiceRole",
-                        "Arn"
-                    ]
-                }
-            },
-            "DependsOn": "CodeDeployApp"
         }
     },
     "Outputs": {
@@ -365,6 +279,16 @@
                 ]
             },
             "Export":{"Name":"LambdaExecutionRoleARN"}
+        },
+        "CodeDeployServiceRoleArn":{
+            "Description":"Get the service role arn",
+            "Value":{
+                "Fn::GetAtt": [
+                    "CodeDeployServiceRole",
+                    "Arn"
+                ]
+            },
+            "Export":{"Name":"CodeDeployServiceRoleArn"}
         }
     }
 }
