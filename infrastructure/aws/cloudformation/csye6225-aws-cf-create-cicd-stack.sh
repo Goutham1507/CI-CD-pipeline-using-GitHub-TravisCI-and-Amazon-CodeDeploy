@@ -15,8 +15,9 @@ if  aws cloudformation describe-stacks --stack-name $stack_name ; then
 aws_domain_name=$(aws route53 list-hosted-zones --query 'HostedZones[0].Name' --output text)
 S3BucketCodeDeployDomain="code-deploy.${aws_domain_name:0:-1}"
 S3BucketApp="${aws_domain_name}csye6225.com"
+TravisUser="travis"
 
-   aws_response=$(aws cloudformation create-stack --stack-name $stack_name --capabilities CAPABILITY_NAMED_IAM --template-body file://csye6225-cf-cicd.json --parameters   ParameterKey=S3BucketCodeDeployDomain,ParameterValue=$S3BucketCodeDeployDomain ParameterKey=S3BucketApp,ParameterValue=$S3BucketApp ParameterKey=TagKey,ParameterValue="csye6225-EC2-Key" ParameterKey=TagValue,ParameterValue="csye6225-EC2" ParameterKey=dynamoDBTable,ParameterValue="csye6225" ParameterKey=SesDomainName,ParameterValue=${aws_domain_name:0:-1} --on-failure DELETE)
+   aws_response=$(aws cloudformation create-stack --stack-name $stack_name --capabilities CAPABILITY_NAMED_IAM --template-body file://csye6225-cf-cicd.json --parameters ParameterKey=TravisUser,ParameterValue=$TravisUser  ParameterKey=S3BucketCodeDeployDomain,ParameterValue=$S3BucketCodeDeployDomain ParameterKey=S3BucketApp,ParameterValue=$S3BucketApp ParameterKey=TagKey,ParameterValue="csye6225-EC2-Key" ParameterKey=TagValue,ParameterValue="csye6225-EC2" ParameterKey=dynamoDBTable,ParameterValue="csye6225" ParameterKey=SesDomainName,ParameterValue=${aws_domain_name:0:-1} --on-failure DELETE)
 
    echo "Waiting for stack to be created ..."
    aws cloudformation wait stack-create-complete --stack-name $stack_name 
