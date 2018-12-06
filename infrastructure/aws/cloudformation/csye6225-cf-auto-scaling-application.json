@@ -465,6 +465,23 @@
             }]
             }
         },
+	 "ALBListener2":{
+            "Type":"AWS::ElasticLoadBalancingV2::Listener",
+            "DependsOn":["ALBTargetGroup","ApplicationLoadBalancer"],
+            "Properties":{
+                "DefaultActions":[{
+                    "Type" : "redirect",
+                    "RedirectConfig":{
+                        "Port" : "443",
+                        "Protocol" : "HTTPS",
+                        "StatusCode" : "HTTP_301"
+                    }
+                }],
+                "LoadBalancerArn" : { "Ref" : "ApplicationLoadBalancer" },
+                "Port" : "80",
+                "Protocol" : "HTTP"
+            }
+        },
         "myDNSRecord":{
             "Type":"AWS::Route53::RecordSet",
             "Properties":{
